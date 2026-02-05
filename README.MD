@@ -1,47 +1,58 @@
-# fgeha-admin
+# FGEHA Admin
 
-<div align="center" style="margin: 30px;">
-    <a href="https://refine.dev">
-    <img alt="refine logo" src="https://refine.ams3.cdn.digitaloceanspaces.com/readme/refine-readme-banner.png">
-    </a>
-</div>
-<br/>
+Admin panel for FGEHA-RCP, built with [Refine](https://refine.dev), React, Ant Design, and Vite.
 
-This [Refine](https://github.com/refinedev/refine) project was generated with [create refine-app](https://github.com/refinedev/refine/tree/master/packages/create-refine-app).
+## Prerequisites
 
-## Getting Started
+- Node.js 18+
+- npm (or yarn/pnpm)
 
-A React Framework for building internal tools, admin panels, dashboards & B2B apps with unmatched flexibility ✨
+## Setup
 
-Refine's hooks and components simplifies the development process and eliminates the repetitive tasks by providing industry-standard solutions for crucial aspects of a project, including authentication, access control, routing, networking, state management, and i18n.
+1. **Clone and install**
 
-## Available Scripts
+   ```bash
+   npm install
+   ```
 
-### Running the development server.
+2. **Environment**
 
-```bash
-    npm run dev
-```
+   Copy the example env file and set your API URL:
 
-### Building for production.
+   ```bash
+   cp .env.example .env
+   ```
 
-```bash
-    npm run build
-```
+   Edit `.env` and set `VITE_API_URL` to your backend API base URL (e.g. `http://localhost:8080`). Do not commit `.env`; it is gitignored.
 
-### Running the production server.
+3. **Run development server**
 
-```bash
-    npm run start
-```
+   ```bash
+   npm run dev
+   ```
 
-## Learn More
+   The app will be available at the URL shown in the terminal (typically `http://localhost:5173`).
 
-To learn more about **Refine**, please check out the [Documentation](https://refine.dev/docs)
+## Scripts
 
-- **REST Data Provider** [Docs](https://refine.dev/docs/core/providers/data-provider/#overview)
-- **Ant Design** [Docs](https://refine.dev/docs/ui-frameworks/antd/tutorial/)
-- **React Router** [Docs](https://refine.dev/docs/core/providers/router-provider/)
+| Command        | Description                    |
+|----------------|--------------------------------|
+| `npm run dev`  | Start Vite dev server          |
+| `npm run build`| Type-check and production build|
+| `npm run preview` | Preview production build    |
+
+## Project structure
+
+- **`src/pages/`** – Dashboard, users, requests, request types, daily bulletin, login, etc.
+- **`src/providers/`** – Auth, data (REST), and constants (e.g. `API_URL` from `VITE_API_URL`).
+- **`src/components/`** – Shared UI (e.g. header).
+
+## Tech stack
+
+- [Refine](https://refine.dev) – Admin framework
+- [React](https://react.dev) + [React Router](https://reactrouter.com)
+- [Ant Design](https://ant.design) – UI components
+- [Vite](https://vitejs.dev) – Build tool
 
 ## License
 

@@ -1,5 +1,4 @@
-import { GitHubBanner, Refine } from "@refinedev/core";
-import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
+import { Refine, Authenticated } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
 import {
@@ -19,87 +18,114 @@ import { App as AntdApp } from "antd";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
 import { ColorModeContextProvider } from "./contexts/color-mode";
+import { LoginPage } from "./pages/login";
 import {
-  BlogPostCreate,
-  BlogPostEdit,
-  BlogPostList,
-  BlogPostShow,
-} from "./pages/blog-posts";
+  UserList,
+  UserShow,
+  UserEdit,
+} from "./pages/users";
 import {
-  CategoryCreate,
-  CategoryEdit,
-  CategoryList,
-  CategoryShow,
-} from "./pages/categories";
+  RequestList,
+  RequestShow,
+} from "./pages/requests";
+import { DashboardPage } from "./pages/dashboard";
+import {
+  RequestTypeList,
+  RequestTypeCreate,
+  RequestTypeEdit,
+} from "./pages/request-types";
+import { UsersWithRequestsPage } from "./pages/users-with-requests";
+import { DailyBulletinList } from "./pages/daily-bulletin";
 import { dataProvider } from "./providers/data";
+import { authProvider } from "./providers/authProvider";
 
 function App() {
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <RefineKbarProvider>
         <ColorModeContextProvider>
           <AntdApp>
-            <DevtoolsProvider>
-              <Refine
+            <Refine
                 dataProvider={dataProvider}
+                authProvider={authProvider}
                 notificationProvider={useNotificationProvider}
                 routerProvider={routerProvider}
                 resources={[
                   {
-                    name: "blog_posts",
-                    list: "/blog-posts",
-                    create: "/blog-posts/create",
-                    edit: "/blog-posts/edit/:id",
-                    show: "/blog-posts/show/:id",
-                    meta: {
-                      canDelete: true,
-                    },
+                    name: "dashboard",
+                    list: "/",
+                    meta: { label: "Dashboard" },
                   },
                   {
-                    name: "categories",
-                    list: "/categories",
-                    create: "/categories/create",
-                    edit: "/categories/edit/:id",
-                    show: "/categories/show/:id",
-                    meta: {
-                      canDelete: true,
-                    },
+                    name: "request-types",
+                    list: "/request-types",
+                    create: "/request-types/create",
+                    edit: "/request-types/edit/:id",
+                    meta: { label: "Request types" },
+                  },
+                  {
+                    name: "requests",
+                    list: "/requests",
+                    show: "/requests/show/:id",
+                    meta: { label: "Requests" },
+                  },
+                  {
+                    name: "users_with_requests",
+                    list: "/users-with-requests",
+                    meta: { label: "Users & requests" },
+                  },
+                  {
+                    name: "users",
+                    list: "/users",
+                    edit: "/users/edit/:id",
+                    show: "/users/show/:id",
+                    meta: { label: "Users" },
+                  },
+                  {
+                    name: "daily-bulletin",
+                    list: "/daily-bulletin",
+                    meta: { label: "Water tanker list" },
                   },
                 ]}
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,
-                  projectId: "6NqqNK-pbPxEZ-0b65kL",
                 }}
               >
                 <Routes>
+                  <Route path="/login" element={<LoginPage />} />
                   <Route
                     element={
-                      <ThemedLayout
-                        Header={() => <Header sticky />}
-                        Sider={(props) => <ThemedSider {...props} fixed />}
+                      <Authenticated
+                        key="authenticated"
+                        redirectOnFail="/login"
                       >
-                        <Outlet />
-                      </ThemedLayout>
+                        <ThemedLayout
+                          Header={() => <Header sticky />}
+                          Sider={(props) => <ThemedSider {...props} fixed />}
+                        >
+                          <Outlet />
+                        </ThemedLayout>
+                      </Authenticated>
                     }
                   >
-                    <Route
-                      index
-                      element={<NavigateToResource resource="blog_posts" />}
-                    />
-                    <Route path="/blog-posts">
-                      <Route index element={<BlogPostList />} />
-                      <Route path="create" element={<BlogPostCreate />} />
-                      <Route path="edit/:id" element={<BlogPostEdit />} />
-                      <Route path="show/:id" element={<BlogPostShow />} />
+                    <Route index element={<DashboardPage />} />
+                    <Route path="/request-types">
+                      <Route index element={<RequestTypeList />} />
+                      <Route path="create" element={<RequestTypeCreate />} />
+                      <Route path="edit/:id" element={<RequestTypeEdit />} />
                     </Route>
-                    <Route path="/categories">
-                      <Route index element={<CategoryList />} />
-                      <Route path="create" element={<CategoryCreate />} />
-                      <Route path="edit/:id" element={<CategoryEdit />} />
-                      <Route path="show/:id" element={<CategoryShow />} />
+                    <Route path="/requests">
+                      <Route index element={<RequestList />} />
+                      <Route path="show/:id" element={<RequestShow />} />
                     </Route>
+                    <Route path="/users-with-requests" element={<UsersWithRequestsPage />} />
+                    <Route path="/users">
+                      <Route index element={<UserList />} />
+                      <Route path="edit/:id" element={<UserEdit />} />
+                      <Route path="show/:id" element={<UserShow />} />
+                    </Route>
+                    <Route path="/daily-bulletin" element={<DailyBulletinList />} />
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
                 </Routes>
@@ -108,8 +134,6 @@ function App() {
                 <UnsavedChangesNotifier />
                 <DocumentTitleHandler />
               </Refine>
-              <DevtoolsPanel />
-            </DevtoolsProvider>
           </AntdApp>
         </ColorModeContextProvider>
       </RefineKbarProvider>

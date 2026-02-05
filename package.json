@@ -6,7 +6,6 @@
   "dependencies": {
     "@refinedev/cli": "^2.16.48",
     "@refinedev/core": "^5.0.8",
-    "@refinedev/devtools": "^2.0.1",
     "@refinedev/kbar": "^2.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -35,9 +34,9 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "dev": "refine dev",
-    "build": "tsc && refine build",
-    "start": "refine start",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "refine": "refine"
   },
   "browserslist": {
@@ -51,8 +50,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "refine": {
-    "projectId": "6NqqNK-pbPxEZ-0b65kL"
   }
 }

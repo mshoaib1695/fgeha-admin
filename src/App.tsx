@@ -38,6 +38,11 @@ import {
 import { UsersWithRequestsPage } from "./pages/users-with-requests";
 import { DailyBulletinList } from "./pages/daily-bulletin";
 import { ServiceOptionsPage } from "./pages/service-options";
+import {
+  SubSectorList,
+  SubSectorCreate,
+  SubSectorEdit,
+} from "./pages/sub-sectors";
 import { dataProvider } from "./providers/data";
 import { authProvider } from "./providers/authProvider";
 
@@ -94,6 +99,13 @@ function App() {
                     list: "/service-options",
                     meta: { label: "Service options" },
                   },
+                  {
+                    name: "sub-sectors",
+                    list: "/sub-sectors",
+                    create: "/sub-sectors/create",
+                    edit: "/sub-sectors/edit/:id",
+                    meta: { label: "Sub-sectors" },
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -136,6 +148,11 @@ function App() {
                     </Route>
                     <Route path="/daily-bulletin" element={<DailyBulletinList />} />
                     <Route path="/service-options" element={<ServiceOptionsPage />} />
+                    <Route path="/sub-sectors">
+                      <Route index element={<SubSectorList />} />
+                      <Route path="create" element={<SubSectorCreate />} />
+                      <Route path="edit/:id" element={<SubSectorEdit />} />
+                    </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
                 </Routes>

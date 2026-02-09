@@ -41,6 +41,54 @@ Admin panel for FGEHA-RSP, built with [Refine](https://refine.dev), React, Ant D
 | `npm run build`| Type-check and production build|
 | `npm run preview` | Preview production build    |
 
+## Running in production
+
+**Important:** `VITE_API_URL` is embedded at **build time**. Set it in `.env` (or as an env var) before running `npm run build`, and use your production API URL.
+
+### 1. Build
+
+```bash
+# Set production API URL (in .env or export)
+# VITE_API_URL=https://api.yourdomain.com
+
+npm run build
+```
+
+Output is in the **`dist/`** folder (static files).
+
+### 2. Serve the build
+
+**Option A – Local preview (test production build)**
+
+```bash
+npm run preview
+```
+
+Serves `dist/` at the URL shown (e.g. `http://localhost:4173`). Good for checking the build before deploy.
+
+**Option B – Static server (Node)**
+
+```bash
+npx serve dist
+```
+
+Uses [serve](https://www.npmjs.com/package/serve). For SPA routing, use: `npx serve dist -s` (single-page fallback).
+
+**Option C – Docker**
+
+From the project root:
+
+```bash
+docker build -t fgeha-admin .
+docker run -p 3000:3000 fgeha-admin
+```
+
+The image builds the app and serves it with `serve` on port 3000.
+
+**Option D – Deploy `dist/` anywhere**
+
+Upload the contents of **`dist/`** to any static host (e.g. Netlify, Vercel, S3 + CloudFront, or your own nginx/Apache). Configure the server for SPA routing (serve `index.html` for all routes).
+
 ## Project structure
 
 - **`src/pages/`** – Dashboard, users, requests, request types, daily bulletin, login, etc.

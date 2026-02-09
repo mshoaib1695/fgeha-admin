@@ -7,12 +7,19 @@ import type {
 import { authHeaderBeforeRequestHook } from "@refinedev/rest";
 import { createSimpleRestDataProvider } from "@refinedev/rest/simple-rest";
 import { API_URL, TOKEN_KEY } from "./constants";
+import { getVToken } from "../lib/v";
+
+function vTokenBeforeRequest(request: Request): void {
+  const t = getVToken();
+  if (t) request.headers.set("X-V", t);
+}
 
 const { dataProvider: baseDataProvider } = createSimpleRestDataProvider({
   apiURL: API_URL,
   kyOptions: {
     hooks: {
       beforeRequest: [
+        vTokenBeforeRequest,
         authHeaderBeforeRequestHook({ ACCESS_TOKEN_KEY: TOKEN_KEY }),
       ],
     },

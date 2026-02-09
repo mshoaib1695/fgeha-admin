@@ -18,6 +18,7 @@ import { App as AntdApp } from "antd";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
 import { ColorModeContextProvider } from "./contexts/color-mode";
+import { VGate } from "./lib/VGate";
 import { LoginPage } from "./pages/login";
 import {
   UserList,
@@ -36,6 +37,7 @@ import {
 } from "./pages/request-types";
 import { UsersWithRequestsPage } from "./pages/users-with-requests";
 import { DailyBulletinList } from "./pages/daily-bulletin";
+import { ServiceOptionsPage } from "./pages/service-options";
 import { dataProvider } from "./providers/data";
 import { authProvider } from "./providers/authProvider";
 
@@ -45,6 +47,7 @@ function App() {
       <RefineKbarProvider>
         <ColorModeContextProvider>
           <AntdApp>
+            <VGate>
             <Refine
                 dataProvider={dataProvider}
                 authProvider={authProvider}
@@ -86,10 +89,16 @@ function App() {
                     list: "/daily-bulletin",
                     meta: { label: "Water tanker list" },
                   },
+                  {
+                    name: "service-options",
+                    list: "/service-options",
+                    meta: { label: "Service options" },
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,
+                  title: { text: "FGEHA Admin" },
                 }}
               >
                 <Routes>
@@ -126,6 +135,7 @@ function App() {
                       <Route path="show/:id" element={<UserShow />} />
                     </Route>
                     <Route path="/daily-bulletin" element={<DailyBulletinList />} />
+                    <Route path="/service-options" element={<ServiceOptionsPage />} />
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
                 </Routes>
@@ -134,6 +144,7 @@ function App() {
                 <UnsavedChangesNotifier />
                 <DocumentTitleHandler />
               </Refine>
+            </VGate>
           </AntdApp>
         </ColorModeContextProvider>
       </RefineKbarProvider>

@@ -1,6 +1,6 @@
 # FGEHA Admin
 
-Admin panel for FGEHA-RCP, built with [Refine](https://refine.dev), React, Ant Design, and Vite.
+Admin panel for FGEHA-RSP, built with [Refine](https://refine.dev), React, Ant Design, and Vite.
 
 ## Prerequisites
 

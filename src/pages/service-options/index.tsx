@@ -1,0 +1,341 @@
+import { useState, useEffect, useCallback } from "react";
+import { Card, Select, Table, Button, Space, message, Modal, Form, Input, InputNumber } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined, MinusCircleOutlined } from "@ant-design/icons";
+import { API_URL, TOKEN_KEY } from "../../providers/constants";
+import { getVToken } from "../../lib/v";
+
+type RequestType = { id: number; name: string; slug: string };
+type OptionType = "form" | "list" | "rules" | "link";
+type RuleItem = { description?: string };
+type OptionRecord = {
+  id: number;
+  requestTypeId: number;
+  label: string;
+  optionType: OptionType;
+  config: { listKey?: string; content?: string; url?: string; rules?: RuleItem[] } | null;
+  displayOrder: number;
+};
+
+const OPTION_TYPES: { value: OptionType; label: string }[] = [
+  { value: "form", label: "Form (create request)" },
+  { value: "list", label: "List (e.g. tanker list, requests)" },
+  { value: "rules", label: "Rules (static content)" },
+  { value: "link", label: "Link (URL)" },
+];
+const LIST_KEYS = [
+  { value: "daily_bulletin", label: "Water tanker list (daily bulletin)" },
+  { value: "requests", label: "List of requests (this type)" },
+  { value: "news", label: "News" },
+];
+
+function authHeaders(): HeadersInit {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const h: HeadersInit = { "Content-Type": "application/json" };
+  if (token) (h as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+  const v = getVToken();
+  if (v) (h as Record<string, string>)["X-V"] = v;
+  return h;
+}
+
+export const ServiceOptionsPage = () => {
+  const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [options, setOptions] = useState<OptionRecord[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
+
+  const loadRequestTypes = useCallback(async () => {
+    setLoadingTypes(true);
+    try {
+      const res = await fetch(`${API_URL}/request-types`, { headers: authHeaders() });
+      const list = await res.json();
+      setRequestTypes(Array.isArray(list) ? list : []);
+      if (selectedTypeId == null && list?.length > 0) setSelectedTypeId(list[0].id);
+    } catch {
+      setRequestTypes([]);
+    } finally {
+      setLoadingTypes(false);
+    }
+  }, [selectedTypeId]);
+
+  const loadOptions = useCallback(async () => {
+    if (selectedTypeId == null) {
+      setOptions([]);
+      return;
+    }
+    setLoadingOptions(true);
+    try {
+      const res = await fetch(
+        `${API_URL}/request-type-options?requestTypeId=${selectedTypeId}`,
+        { headers: authHeaders() }
+      );
+      if (!res.ok) {
+        setOptions([]);
+        return;
+      }
+      const list = await res.json();
+      setOptions(Array.isArray(list) ? list : []);
+    } catch {
+      setOptions([]);
+    } finally {
+      setLoadingOptions(false);
+    }
+  }, [selectedTypeId]);
+
+  useEffect(() => {
+    loadRequestTypes();
+  }, [loadRequestTypes]);
+
+  useEffect(() => {
+    loadOptions();
+  }, [loadOptions]);
+
+  const openCreate = () => {
+    setEditingId(null);
+    form.setFieldsValue({
+      label: "",
+      optionType: "form",
+      displayOrder: options.length,
+      listKey: undefined,
+      rules: [{ description: "" }],
+      url: "",
+    });
+    setModalOpen(true);
+  };
+
+  const openEdit = (row: OptionRecord) => {
+    setEditingId(row.id);
+    const cfg = row.config;
+    let rules: RuleItem[] = [];
+    if (cfg?.rules && Array.isArray(cfg.rules) && cfg.rules.length > 0) {
+      rules = cfg.rules.map((r) => ({ description: r.description ?? "" }));
+    } else if (cfg?.content) {
+      rules = [{ description: String(cfg.content) }];
+    }
+    if (rules.length === 0) rules = [{ description: "" }];
+    form.setFieldsValue({
+      label: row.label,
+      optionType: row.optionType,
+      displayOrder: row.displayOrder,
+      listKey: row.config?.listKey,
+      rules,
+      url: row.config?.url ?? "",
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await form.validateFields();
+    } catch {
+      return;
+    }
+    const values = form.getFieldsValue();
+    if (selectedTypeId == null) {
+      message.error("Select a request type first.");
+      return;
+    }
+    const payload = {
+      requestTypeId: selectedTypeId,
+      label: values.label?.trim(),
+      optionType: values.optionType,
+      displayOrder: values.displayOrder ?? 0,
+      config: undefined as Record<string, unknown> | undefined,
+    };
+    if (values.optionType === "list") payload.config = { listKey: values.listKey };
+    if (values.optionType === "rules") {
+      const rulesList = Array.isArray(values.rules) ? values.rules : [];
+      payload.config = {
+        rules: rulesList
+          .map((r: RuleItem) => ({ description: (r.description ?? "").trim() }))
+          .filter((r: RuleItem) => r.description),
+      };
+    }
+    if (values.optionType === "link") payload.config = { url: values.url ?? "" };
+
+    setSaving(true);
+    try {
+      if (editingId != null) {
+        const res = await fetch(`${API_URL}/request-type-options/${editingId}`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            label: payload.label,
+            optionType: payload.optionType,
+            displayOrder: payload.displayOrder,
+            config: payload.config ?? null,
+          }),
+        });
+        if (!res.ok) throw new Error("Update failed");
+        message.success("Option updated.");
+      } else {
+        const res = await fetch(`${API_URL}/request-type-options`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Create failed");
+        message.success("Option added.");
+      }
+      setModalOpen(false);
+      loadOptions();
+    } catch (e) {
+      message.error((e as Error).message ?? "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    Modal.confirm({
+      title: "Delete option?",
+      onOk: async () => {
+        try {
+          const res = await fetch(`${API_URL}/request-type-options/${id}`, {
+            method: "DELETE",
+            headers: authHeaders(),
+          });
+          if (!res.ok) throw new Error("Delete failed");
+          message.success("Option deleted.");
+          loadOptions();
+        } catch (e) {
+          message.error((e as Error).message ?? "Failed to delete.");
+        }
+      },
+    });
+  };
+
+  const columns = [
+    { title: "Label", dataIndex: "label", key: "label" },
+    { title: "Type", dataIndex: "optionType", key: "optionType" },
+    {
+      title: "Config",
+      key: "config",
+      render: (_: unknown, row: OptionRecord) => {
+        if (row.optionType === "list" && row.config?.listKey)
+          return LIST_KEYS.find((k) => k.value === row.config?.listKey)?.label ?? row.config.listKey;
+        if (row.optionType === "rules") {
+          const rules = row.config?.rules;
+          if (Array.isArray(rules) && rules.length > 0)
+            return `${rules.length} rule(s)`;
+          if (row.config?.content)
+            return (row.config.content as string).slice(0, 40) + (row.config.content.length > 40 ? "…" : "");
+        }
+        if (row.optionType === "link" && row.config?.url) return row.config.url;
+        return "—";
+      },
+    },
+    { title: "Order", dataIndex: "displayOrder", key: "displayOrder", width: 70 },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 120,
+      render: (_: unknown, row: OptionRecord) => (
+        <Space>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(row.id)} />
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <Card title="Service options (per request type)">
+      <Space direction="vertical" style={{ width: "100%" }} size="middle">
+        <Space wrap>
+          <span>Request type:</span>
+          <Select
+            loading={loadingTypes}
+            value={selectedTypeId ?? undefined}
+            onChange={(v) => setSelectedTypeId(v ?? null)}
+            style={{ minWidth: 220 }}
+            options={requestTypes.map((t) => ({ value: t.id, label: `${t.name} (${t.slug})` }))}
+            placeholder="Select request type"
+          />
+        </Space>
+        <div>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={selectedTypeId == null}>
+            Add option
+          </Button>
+        </div>
+        <Table
+          rowKey="id"
+          loading={loadingOptions}
+          dataSource={options}
+          columns={columns}
+          pagination={false}
+          size="small"
+        />
+      </Space>
+
+      <Modal
+        title={editingId != null ? "Edit option" : "Add option"}
+        open={modalOpen}
+        onOk={handleSubmit}
+        onCancel={() => setModalOpen(false)}
+        confirmLoading={saving}
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="label" label="Label" rules={[{ required: true }]}>
+            <Input placeholder="e.g. Order Water Tanker" />
+          </Form.Item>
+          <Form.Item name="optionType" label="Type" rules={[{ required: true }]}>
+            <Select options={OPTION_TYPES} />
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.optionType !== curr.optionType}>
+            {({ getFieldValue }) => {
+              const type = getFieldValue("optionType");
+              if (type === "list")
+                return (
+                  <Form.Item name="listKey" label="List" rules={[{ required: true }]}>
+                    <Select options={LIST_KEYS} placeholder="Select list type" />
+                  </Form.Item>
+                );
+              if (type === "rules")
+                return (
+                  <Form.Item label="Rules (list of rule text)">
+                    <Form.List name="rules">
+                      {(fields, { add, remove }) => (
+                        <>
+                          {fields.map(({ key, name, ...rest }) => (
+                            <Card size="small" key={key} style={{ marginBottom: 12 }}>
+                              <Space direction="vertical" style={{ width: "100%" }}>
+                                <Form.Item {...rest} name={[name, "description"]} label="Rule">
+                                  <Input.TextArea rows={3} placeholder="Rule text" />
+                                </Form.Item>
+                                <Button type="link" danger size="small" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
+                                  Remove rule
+                                </Button>
+                              </Space>
+                            </Card>
+                          ))}
+                          <Button type="dashed" onClick={() => add({ description: "" })} block>
+                            + Add rule
+                          </Button>
+                        </>
+                      )}
+                    </Form.List>
+                  </Form.Item>
+                );
+              if (type === "link")
+                return (
+                  <Form.Item name="url" label="URL">
+                    <Input placeholder="https://..." />
+                  </Form.Item>
+                );
+              return null;
+            }}
+          </Form.Item>
+          <Form.Item name="displayOrder" label="Display order">
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Card>
+  );
+};

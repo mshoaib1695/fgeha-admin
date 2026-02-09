@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, Select, Table, Button, Space, message, Modal, Form, Input, InputNumber } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, MinusCircleOutlined } from "@ant-design/icons";
+import { Card, Select, Table, Button, Space, message, Modal, Form, Input, InputNumber, Upload } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined, MinusCircleOutlined, PictureOutlined } from "@ant-design/icons";
+import type { UploadProps } from "antd";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
@@ -14,6 +15,7 @@ type OptionRecord = {
   optionType: OptionType;
   config: { listKey?: string; content?: string; url?: string; rules?: RuleItem[] } | null;
   displayOrder: number;
+  imageUrl?: string | null;
 };
 
 const OPTION_TYPES: { value: OptionType; label: string }[] = [
@@ -103,6 +105,7 @@ export const ServiceOptionsPage = () => {
       listKey: undefined,
       rules: [{ description: "" }],
       url: "",
+      imageUrl: "",
     });
     setModalOpen(true);
   };
@@ -124,8 +127,42 @@ export const ServiceOptionsPage = () => {
       listKey: row.config?.listKey,
       rules,
       url: row.config?.url ?? "",
+      imageUrl: row.imageUrl ?? "",
     });
     setModalOpen(true);
+  };
+
+  const uploadImageProps: UploadProps = {
+    name: "file",
+    maxCount: 1,
+    showUploadList: false,
+    customRequest: async ({ file, onSuccess, onError }) => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const vToken = getVToken();
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (vToken) headers["X-V"] = vToken;
+      const formData = new FormData();
+      formData.append("file", file as File);
+      try {
+        const res = await fetch(`${API_URL}/request-type-options/upload-image`, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { message?: string }).message ?? "Upload failed");
+        }
+        const { url } = await res.json();
+        form.setFieldValue("imageUrl", url);
+        message.success("Image uploaded.");
+        onSuccess?.(url);
+      } catch (e) {
+        message.error((e as Error).message ?? "Upload failed");
+        onError?.(e as Error);
+      }
+    },
   };
 
   const handleSubmit = async () => {
@@ -145,6 +182,7 @@ export const ServiceOptionsPage = () => {
       optionType: values.optionType,
       displayOrder: values.displayOrder ?? 0,
       config: undefined as Record<string, unknown> | undefined,
+      imageUrl: values.imageUrl?.trim() || null,
     };
     if (values.optionType === "list") payload.config = { listKey: values.listKey };
     if (values.optionType === "rules") {
@@ -168,6 +206,7 @@ export const ServiceOptionsPage = () => {
             optionType: payload.optionType,
             displayOrder: payload.displayOrder,
             config: payload.config ?? null,
+            imageUrl: payload.imageUrl,
           }),
         });
         if (!res.ok) throw new Error("Update failed");
@@ -333,6 +372,14 @@ export const ServiceOptionsPage = () => {
           </Form.Item>
           <Form.Item name="displayOrder" label="Display order">
             <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item name="imageUrl" label="Image (shown on app after header)">
+            <Input placeholder="Upload below or paste image URL" />
+          </Form.Item>
+          <Form.Item label="Upload image">
+            <Upload {...uploadImageProps}>
+              <Button icon={<PictureOutlined />}>Select image (PNG, JPEG, WebP, GIF, max 2MB)</Button>
+            </Upload>
           </Form.Item>
         </Form>
       </Modal>

@@ -1,5 +1,12 @@
 import type { AuthProvider } from "@refinedev/core";
-import { API_URL, TOKEN_KEY, USER_KEY } from "./constants";
+import {
+  API_URL,
+  LAST_ACTIVITY_KEY,
+  LOGOUT_EVENT_KEY,
+  SESSION_START_KEY,
+  TOKEN_KEY,
+  USER_KEY,
+} from "./constants";
 import { getVToken } from "../lib/v";
 
 export interface AuthUser {
@@ -10,6 +17,12 @@ export interface AuthUser {
   approvalStatus: string;
   profileImage?: string | null;
 }
+
+const clearSessionTracking = () => {
+  localStorage.removeItem(LAST_ACTIVITY_KEY);
+  localStorage.removeItem(SESSION_START_KEY);
+  localStorage.removeItem(LOGOUT_EVENT_KEY);
+};
 
 export const authProvider: AuthProvider = {
   login: async ({ email, password }) => {
@@ -35,13 +48,18 @@ export const authProvider: AuthProvider = {
         error: "Admin access only",
       };
     }
+    const now = Date.now().toString();
     localStorage.setItem(TOKEN_KEY, access_token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem(LAST_ACTIVITY_KEY, now);
+    localStorage.setItem(SESSION_START_KEY, now);
+    localStorage.removeItem(LOGOUT_EVENT_KEY);
     return { success: true, redirectTo: "/" };
   },
   logout: async () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    clearSessionTracking();
     return { success: true, redirectTo: "/login" };
   },
   check: async () => {
@@ -54,6 +72,7 @@ export const authProvider: AuthProvider = {
     if (!res.ok) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      clearSessionTracking();
       return { authenticated: false, redirectTo: "/login", logout: true };
     }
     const user = await res.json();

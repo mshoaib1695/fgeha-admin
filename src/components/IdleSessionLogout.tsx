@@ -1,60 +1,130 @@
 import { useLogout } from "@refinedev/core";
 import { useEffect, useRef } from "react";
-import { TOKEN_KEY } from "../providers/constants";
+import {
+  LAST_ACTIVITY_KEY,
+  LOGOUT_EVENT_KEY,
+  SESSION_START_KEY,
+  TOKEN_KEY,
+} from "../providers/constants";
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const ABSOLUTE_SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000;
 const CHECK_INTERVAL_MS = 5000;
-const LAST_ACTIVITY_KEY = "admin:last-activity";
-const LOGOUT_EVENT_KEY = "admin:logout-event";
+const ACTIVITY_WRITE_THROTTLE_MS = 15 * 1000;
+
+const parseTimestamp = (value: string | null) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
 
 export function IdleSessionLogout() {
   const { mutate: logout } = useLogout();
   const lastActivityRef = useRef<number>(Date.now());
+  const sessionStartRef = useRef<number>(Date.now());
+  const lastPersistedActivityRef = useRef<number>(0);
   const isLoggingOutRef = useRef(false);
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
-    const parsedLastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY));
-    if (Number.isFinite(parsedLastActivity) && parsedLastActivity > 0) {
+    const now = Date.now();
+    const parsedLastActivity = parseTimestamp(localStorage.getItem(LAST_ACTIVITY_KEY));
+    const parsedSessionStart = parseTimestamp(localStorage.getItem(SESSION_START_KEY));
+
+    if (parsedLastActivity) {
       lastActivityRef.current = parsedLastActivity;
+      lastPersistedActivityRef.current = parsedLastActivity;
     } else {
-      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+      lastActivityRef.current = now;
+      lastPersistedActivityRef.current = now;
+      localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
     }
 
-    const triggerLogout = () => {
+    if (parsedSessionStart) {
+      sessionStartRef.current = parsedSessionStart;
+    } else {
+      sessionStartRef.current = now;
+      localStorage.setItem(SESSION_START_KEY, now.toString());
+    }
+
+    const triggerLogout = (reason: "idle" | "absolute" | "cross-tab") => {
       if (isLoggingOutRef.current) return;
       isLoggingOutRef.current = true;
-      localStorage.setItem(LOGOUT_EVENT_KEY, Date.now().toString());
+      localStorage.setItem(
+        LOGOUT_EVENT_KEY,
+        JSON.stringify({
+          at: Date.now(),
+          reason,
+        })
+      );
       logout();
     };
 
     const markActivity = () => {
       if (isLoggingOutRef.current) return;
-      const now = Date.now();
-      lastActivityRef.current = now;
-      localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+      const activityAt = Date.now();
+      lastActivityRef.current = activityAt;
+      // Persist at a low frequency to avoid excessive localStorage writes.
+      if (activityAt - lastPersistedActivityRef.current >= ACTIVITY_WRITE_THROTTLE_MS) {
+        lastPersistedActivityRef.current = activityAt;
+        localStorage.setItem(LAST_ACTIVITY_KEY, activityAt.toString());
+      }
     };
 
-    const checkIdle = () => {
-      if (Date.now() - lastActivityRef.current >= IDLE_TIMEOUT_MS) {
-        triggerLogout();
+    const checkSession = () => {
+      const current = Date.now();
+      if (current - sessionStartRef.current >= ABSOLUTE_SESSION_TIMEOUT_MS) {
+        triggerLogout("absolute");
+        return;
+      }
+      if (current - lastActivityRef.current >= IDLE_TIMEOUT_MS) {
+        triggerLogout("idle");
       }
     };
 
     const onStorage = (event: StorageEvent) => {
       if (event.key === LAST_ACTIVITY_KEY && event.newValue) {
-        const next = Number(event.newValue);
-        if (Number.isFinite(next) && next > 0) {
+        const next = parseTimestamp(event.newValue);
+        if (next) {
           lastActivityRef.current = next;
+          lastPersistedActivityRef.current = next;
+        }
+      }
+
+      if (event.key === SESSION_START_KEY && event.newValue) {
+        const next = parseTimestamp(event.newValue);
+        if (next) {
+          sessionStartRef.current = next;
         }
       }
 
       if (event.key === LOGOUT_EVENT_KEY && event.newValue) {
-        triggerLogout();
+        triggerLogout("cross-tab");
       }
     };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkSession();
+        if (!isLoggingOutRef.current) {
+          markActivity();
+        }
+      }
+    };
+
+    const onBlur = () => checkSession();
+    const onPageHide = () => checkSession();
+    const onFocus = () => {
+      checkSession();
+      if (!isLoggingOutRef.current) {
+        markActivity();
+      }
+    };
+
+    // Enforce expiration immediately when the app becomes active.
+    checkSession();
+    if (isLoggingOutRef.current) return;
 
     const activityEvents: (keyof WindowEventMap)[] = [
       "mousemove",
@@ -62,19 +132,26 @@ export function IdleSessionLogout() {
       "keydown",
       "scroll",
       "touchstart",
-      "focus",
     ];
 
     activityEvents.forEach((eventName) =>
       window.addEventListener(eventName, markActivity, { passive: true })
     );
     window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("focus", onFocus);
 
-    const intervalId = window.setInterval(checkIdle, CHECK_INTERVAL_MS);
+    const intervalId = window.setInterval(checkSession, CHECK_INTERVAL_MS);
 
     return () => {
       window.clearInterval(intervalId);
       window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("focus", onFocus);
       activityEvents.forEach((eventName) =>
         window.removeEventListener(eventName, markActivity)
       );

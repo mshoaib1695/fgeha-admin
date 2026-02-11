@@ -6,3 +6,12 @@ export const TOKEN_KEY = "token";
 
 /** localStorage key for current user (used by auth provider getIdentity) */
 export const USER_KEY = "user";
+
+/** localStorage key for most recent user interaction timestamp */
+export const LAST_ACTIVITY_KEY = "admin:last-activity";
+
+/** localStorage key for session start timestamp (absolute timeout cap) */
+export const SESSION_START_KEY = "admin:session-start";
+
+/** localStorage key used to broadcast cross-tab logout events */
+export const LOGOUT_EVENT_KEY = "admin:logout-event";

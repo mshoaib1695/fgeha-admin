@@ -17,6 +17,7 @@ import routerProvider, {
 import { App as AntdApp } from "antd";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
+import { IdleSessionLogout } from "./components/IdleSessionLogout";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { VGate } from "./lib/VGate";
 import { LoginPage } from "./pages/login";
@@ -170,6 +171,7 @@ function App() {
                           Header={() => <Header sticky />}
                           Sider={(props) => <ThemedSider {...props} fixed Title={SiderTitle} />}
                         >
+                          <IdleSessionLogout />
                           <Outlet />
                         </ThemedLayout>
                       </Authenticated>

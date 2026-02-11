@@ -64,7 +64,17 @@ export const RequestList = () => {
     resource: "request-types",
     sorters: [{ field: "displayOrder", order: "asc" }],
   });
+  const { result: subSectorsResult } = useList({
+    resource: "sub-sectors",
+    sorters: [{ field: "name", order: "asc" }],
+  });
   const requestTypes = (requestTypesResult?.data ?? []) as BaseRecord[];
+  const subSectors = (subSectorsResult?.data ?? []) as BaseRecord[];
+  const subSectorNameById = new Map<number, string>(
+    subSectors
+      .map((s) => [Number(s.id), String(s.name ?? "").trim()] as const)
+      .filter(([id, name]) => !Number.isNaN(id) && !!name),
+  );
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
@@ -110,6 +120,8 @@ export const RequestList = () => {
         const phoneCode = String(r?.user?.phoneCountryCode ?? "").trim();
         const phoneNumber = String(r?.user?.phoneNumber ?? "").trim();
         const mobile = `${phoneCode}${phoneCode && phoneNumber ? " " : ""}${phoneNumber}`.trim();
+        const subSectorId = Number(r?.subSectorId);
+        const subSectorName = subSectorNameById.get(subSectorId);
         return {
           "S.No": index + 1,
           "Request Id": r?.requestNumber ?? "",
@@ -118,7 +130,7 @@ export const RequestList = () => {
           "Mobile No": mobile || "-",
           "H. No": r?.houseNo ?? "",
           "S. No": r?.streetNo ?? "",
-          "Sub-Sec": r?.subSectorId ?? "",
+          "Sub-Sec": subSectorName ?? (r?.subSectorId ?? ""),
         };
       });
       const ws = XLSX.utils.json_to_sheet(sheetData);
@@ -251,7 +263,15 @@ export const RequestList = () => {
         />
         <Table.Column dataIndex="houseNo" title="House no" width={110} />
         <Table.Column dataIndex="streetNo" title="Street no" width={110} />
-        <Table.Column dataIndex="subSectorId" title="Sub-sector" width={100} />
+        <Table.Column
+          dataIndex="subSectorId"
+          title="Sub-sector"
+          width={140}
+          render={(value: unknown) => {
+            const id = Number(value);
+            return subSectorNameById.get(id) ?? value ?? "-";
+          }}
+        />
         <Table.Column
           dataIndex="status"
           title="Status"

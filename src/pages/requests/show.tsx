@@ -8,8 +8,9 @@ const { Title } = Typography;
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
+  { value: "cancelled", label: "Cancel" },
   { value: "in_progress", label: "In progress" },
-  { value: "done", label: "Done" },
+  { value: "completed", label: "Completed" },
 ];
 
 export const RequestShow = () => {
@@ -20,7 +21,7 @@ export const RequestShow = () => {
   const invalidate = useInvalidate();
 
   useEffect(() => {
-    if (record?.status) setStatus(record.status);
+    if (record?.status) setStatus(record.status === "done" ? "completed" : record.status);
   }, [record?.id, record?.status]);
 
   const handleUpdateStatus = async () => {
@@ -53,6 +54,8 @@ export const RequestShow = () => {
     <Show isLoading={query?.isLoading}>
       <Title level={5}>ID</Title>
       <TextField value={record?.id} />
+      <Title level={5}>Request no</Title>
+      <TextField value={record?.requestNumber ?? "-"} />
       <Title level={5}>Type</Title>
       <TextField value={record?.requestType?.name ?? record?.requestTypeId ?? "-"} />
       <Title level={5}>Description</Title>

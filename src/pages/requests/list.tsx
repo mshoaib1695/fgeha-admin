@@ -4,9 +4,10 @@ import {
   DateField,
   List,
   ShowButton,
+  DeleteButton,
   useTable,
 } from "@refinedev/antd";
-import { useList } from "@refinedev/core";
+import { useInvalidate, useList } from "@refinedev/core";
 import { Table, Tag, Space, Typography, Button, Modal, Form, Select, DatePicker, message } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import type { BaseRecord } from "@refinedev/core";
@@ -16,15 +17,26 @@ import { getVToken } from "../../lib/v";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "orange",
+  cancelled: "red",
   in_progress: "blue",
+  completed: "green",
   done: "green",
 };
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
+  { value: "cancelled", label: "Cancel" },
   { value: "in_progress", label: "In progress" },
-  { value: "done", label: "Done" },
+  { value: "completed", label: "Completed" },
 ];
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  cancelled: "Cancel",
+  in_progress: "In progress",
+  completed: "Completed",
+  done: "Completed",
+};
 
 function buildQuery(params: {
   requestTypeId?: number;
@@ -55,7 +67,9 @@ export const RequestList = () => {
   const requestTypes = (requestTypesResult?.data ?? []) as BaseRecord[];
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
   const [form] = Form.useForm();
+  const invalidate = useInvalidate();
 
   const dataSource = filterUserId
     ? (tableProps.dataSource ?? []).filter(
@@ -92,18 +106,21 @@ export const RequestList = () => {
       const data = (await res.json()) as BaseRecord[];
       const rows = Array.isArray(data) ? data : [];
 
-      const sheetData = rows.map((r: BaseRecord) => ({
-        ID: r.id,
-        "Applicant name": r?.user?.fullName ?? "-",
-        "Request type": r?.requestType?.name ?? r?.requestTypeId ?? "-",
-        Description: r?.description ?? "",
-        Status: r?.status ?? "",
-        "User email": r?.user?.email ?? r?.userId ?? "-",
-        "House no": r?.houseNo ?? "",
-        "Street no": r?.streetNo ?? "",
-        "Created at": r?.createdAt ? new Date(r.createdAt as string).toLocaleString() : "",
-        "Updated at": r?.updatedAt ? new Date(r.updatedAt as string).toLocaleString() : "",
-      }));
+      const sheetData = rows.map((r: BaseRecord, index: number) => {
+        const phoneCode = String(r?.user?.phoneCountryCode ?? "").trim();
+        const phoneNumber = String(r?.user?.phoneNumber ?? "").trim();
+        const mobile = `${phoneCode}${phoneCode && phoneNumber ? " " : ""}${phoneNumber}`.trim();
+        return {
+          "S.No": index + 1,
+          "Request Id": r?.requestNumber ?? "",
+          "Request Time": r?.createdAt ? new Date(r.createdAt as string).toLocaleString() : "",
+          Name: r?.user?.fullName ?? "-",
+          "Mobile No": mobile || "-",
+          "H. No": r?.houseNo ?? "",
+          "S. No": r?.streetNo ?? "",
+          "Sub-Sec": r?.subSectorId ?? "",
+        };
+      });
       const ws = XLSX.utils.json_to_sheet(sheetData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Requests");
@@ -116,6 +133,33 @@ export const RequestList = () => {
       message.error(e instanceof Error ? e.message : "Export failed");
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleInlineStatusUpdate = async (requestId: number, status: string) => {
+    setUpdatingStatusId(requestId);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const vToken = getVToken();
+      const res = await fetch(`${API_URL}/requests/${requestId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(vToken ? { "X-V": vToken } : {}),
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { message?: string }).message ?? "Failed to update status");
+      }
+      message.success("Status updated");
+      invalidate({ resource: "requests", invalidates: ["list", "detail"] });
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Failed to update status");
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
 
@@ -178,6 +222,19 @@ export const RequestList = () => {
       )}
       <Table {...tableProps} dataSource={dataSource} rowKey="id">
         <Table.Column dataIndex="id" title="ID" width={70} />
+        <Table.Column dataIndex="requestNumber" title="Request no" width={130} />
+        <Table.Column
+          title="Applicant"
+          width={180}
+          render={(_, record: BaseRecord) => (
+            <>
+              <div>{record?.user?.fullName ?? "-"}</div>
+              <Typography.Text type="secondary">
+                {record?.user?.email ?? "-"}
+              </Typography.Text>
+            </>
+          )}
+        />
         <Table.Column
           dataIndex={["requestType", "name"]}
           title="Type"
@@ -189,33 +246,49 @@ export const RequestList = () => {
           dataIndex="description"
           title="Description"
           ellipsis
-          render={(value: string) => (value?.length > 60 ? `${value.slice(0, 60)}…` : value)}
+          width={260}
+          render={(value: string) => (value?.length > 100 ? `${value.slice(0, 100)}…` : value)}
         />
+        <Table.Column dataIndex="houseNo" title="House no" width={110} />
+        <Table.Column dataIndex="streetNo" title="Street no" width={110} />
+        <Table.Column dataIndex="subSectorId" title="Sub-sector" width={100} />
         <Table.Column
           dataIndex="status"
           title="Status"
-          render={(value: string) => (
-            <Tag color={STATUS_COLORS[value] ?? "default"}>{value}</Tag>
+          width={190}
+          render={(value: string, record: BaseRecord) => (
+            <Space>
+              <Tag color={STATUS_COLORS[value] ?? "default"}>{STATUS_LABELS[value] ?? value}</Tag>
+              <Select
+                value={value === "done" ? "completed" : value}
+                options={STATUS_OPTIONS}
+                style={{ width: 130 }}
+                loading={updatingStatusId === Number(record.id)}
+                disabled={updatingStatusId === Number(record.id)}
+                onChange={(next) => {
+                  if (next !== value) {
+                    handleInlineStatusUpdate(Number(record.id), next);
+                  }
+                }}
+              />
+            </Space>
           )}
-        />
-        <Table.Column
-          dataIndex={["user", "email"]}
-          title="User"
-          render={(_, record: BaseRecord) => record?.user?.email ?? record?.userId ?? "-"}
         />
         <Table.Column
           dataIndex={["createdAt"]}
           title="Created"
+          width={160}
           render={(value: string) => <DateField value={value} />}
         />
         <Table.Column
           title="Actions"
           dataIndex="actions"
           fixed="right"
-          width={80}
+          width={120}
           render={(_, record: BaseRecord) => (
             <Space>
               <ShowButton hideText size="small" recordItemId={record.id} />
+              <DeleteButton hideText size="small" recordItemId={record.id} />
             </Space>
           )}
         />

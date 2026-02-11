@@ -8,6 +8,7 @@ export interface AuthUser {
   fullName: string;
   role: string;
   approvalStatus: string;
+  profileImage?: string | null;
 }
 
 export const authProvider: AuthProvider = {
@@ -15,7 +16,7 @@ export const authProvider: AuthProvider = {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     const v = getVToken();
     if (v) headers["X-V"] = v;
-    const res = await fetch(`${API_URL}/auth/login`, {
+    const res = await fetch(`${API_URL}/auth/admin-login`, {
       method: "POST",
       headers,
       body: JSON.stringify({ email, password }),
@@ -28,6 +29,12 @@ export const authProvider: AuthProvider = {
       };
     }
     const { access_token, user } = await res.json();
+    if (user?.role !== "admin") {
+      return {
+        success: false,
+        error: "Admin access only",
+      };
+    }
     localStorage.setItem(TOKEN_KEY, access_token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     return { success: true, redirectTo: "/" };

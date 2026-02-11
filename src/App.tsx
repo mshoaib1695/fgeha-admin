@@ -1,4 +1,4 @@
-import { Refine, Authenticated } from "@refinedev/core";
+import { Refine, Authenticated, useGetIdentity } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
 import {
@@ -44,7 +44,52 @@ import {
   SubSectorEdit,
 } from "./pages/sub-sectors";
 import { dataProvider } from "./providers/data";
-import { authProvider } from "./providers/authProvider";
+import { authProvider, type AuthUser } from "./providers/authProvider";
+import { API_URL } from "./providers/constants";
+
+function SiderTitle({ collapsed }: { collapsed: boolean }) {
+  const { data: user } = useGetIdentity<AuthUser>();
+  const profileImageUrl =
+    user?.profileImage && user.profileImage.trim()
+      ? `${API_URL.replace(/\/$/, "")}/${user.profileImage.replace(/^\//, "")}`
+      : null;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {profileImageUrl ? (
+        <img
+          src={profileImageUrl}
+          alt={user?.fullName ?? "User"}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            objectFit: "cover",
+            border: "1px solid rgba(0,0,0,0.08)",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            background: "#1677ff",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            fontSize: 13,
+          }}
+        >
+          {(user?.fullName ?? "U").charAt(0).toUpperCase()}
+        </div>
+      )}
+      {!collapsed ? <span style={{ fontWeight: 700 }}>FGEHA Admin</span> : null}
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -123,7 +168,7 @@ function App() {
                       >
                         <ThemedLayout
                           Header={() => <Header sticky />}
-                          Sider={(props) => <ThemedSider {...props} fixed />}
+                          Sider={(props) => <ThemedSider {...props} fixed Title={SiderTitle} />}
                         >
                           <Outlet />
                         </ThemedLayout>

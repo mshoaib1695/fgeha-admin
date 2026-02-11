@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router";
 import {
   DateField,
+  EditButton,
   List,
   ShowButton,
   DeleteButton,
@@ -232,12 +233,18 @@ export const RequestList = () => {
           Filtered by user ID: {filterUserId}
         </Typography.Text>
       )}
-      <Table {...tableProps} dataSource={dataSource} rowKey="id">
-        <Table.Column dataIndex="id" title="ID" width={70} />
+      <Table
+        {...tableProps}
+        dataSource={dataSource}
+        rowKey="id"
+        scroll={{ x: 1480 }}
+      >
+        <Table.Column dataIndex="id" title="ID" width={70} responsive={["md"]} />
         <Table.Column dataIndex="requestNumber" title="Request no" width={130} />
         <Table.Column
           title="Applicant"
           width={180}
+          responsive={["md"]}
           render={(_, record: BaseRecord) => (
             <>
               <div>{record?.user?.fullName ?? "-"}</div>
@@ -250,23 +257,18 @@ export const RequestList = () => {
         <Table.Column
           dataIndex={["requestType", "name"]}
           title="Type"
+          width={150}
           render={(_, record: BaseRecord) =>
             record?.requestType?.name ?? record?.requestTypeId ?? "-"
           }
         />
-        <Table.Column
-          dataIndex="description"
-          title="Description"
-          ellipsis
-          width={260}
-          render={(value: string) => (value?.length > 100 ? `${value.slice(0, 100)}…` : value)}
-        />
-        <Table.Column dataIndex="houseNo" title="House no" width={110} />
-        <Table.Column dataIndex="streetNo" title="Street no" width={110} />
+        <Table.Column dataIndex="houseNo" title="House no" width={110} responsive={["md"]} />
+        <Table.Column dataIndex="streetNo" title="Street no" width={110} responsive={["md"]} />
         <Table.Column
           dataIndex="subSectorId"
           title="Sub-sector"
           width={140}
+          responsive={["md"]}
           render={(value: unknown) => {
             const id = Number(value);
             return subSectorNameById.get(id) ?? value ?? "-";
@@ -275,38 +277,49 @@ export const RequestList = () => {
         <Table.Column
           dataIndex="status"
           title="Status"
-          width={190}
-          render={(value: string, record: BaseRecord) => (
-            <Space>
-              <Tag color={STATUS_COLORS[value] ?? "default"}>{STATUS_LABELS[value] ?? value}</Tag>
-              <Select
-                value={value === "done" ? "completed" : value}
-                options={STATUS_OPTIONS}
-                style={{ width: 130 }}
-                loading={updatingStatusId === Number(record.id)}
-                disabled={updatingStatusId === Number(record.id)}
-                onChange={(next) => {
-                  if (next !== value) {
-                    handleInlineStatusUpdate(Number(record.id), next);
-                  }
-                }}
-              />
-            </Space>
+          width={120}
+          render={(value: string) => (
+            <Tag color={STATUS_COLORS[value] ?? "default"}>
+              {STATUS_LABELS[value] ?? value}
+            </Tag>
           )}
         />
         <Table.Column
           dataIndex={["createdAt"]}
           title="Created"
           width={160}
+          responsive={["lg"]}
           render={(value: string) => <DateField value={value} />}
+        />
+        <Table.Column
+          dataIndex="description"
+          title="Description"
+          ellipsis
+          width={260}
+          responsive={["lg"]}
+          render={(value: string) => (value?.length > 100 ? `${value.slice(0, 100)}…` : value)}
         />
         <Table.Column
           title="Actions"
           dataIndex="actions"
           fixed="right"
-          width={120}
+          width={310}
           render={(_, record: BaseRecord) => (
-            <Space>
+            <Space wrap>
+              <Select
+                size="small"
+                value={record?.status === "done" ? "completed" : record?.status}
+                options={STATUS_OPTIONS}
+                style={{ width: 130 }}
+                loading={updatingStatusId === Number(record.id)}
+                disabled={updatingStatusId === Number(record.id)}
+                onChange={(next) => {
+                  if (next !== record?.status) {
+                    handleInlineStatusUpdate(Number(record.id), next);
+                  }
+                }}
+              />
+              <EditButton hideText size="small" recordItemId={record.id} />
               <ShowButton hideText size="small" recordItemId={record.id} />
               <DeleteButton hideText size="small" recordItemId={record.id} />
             </Space>

@@ -15,6 +15,16 @@ import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import { App as AntdApp } from "antd";
+import {
+  AppstoreOutlined,
+  DashboardOutlined,
+  FileTextOutlined,
+  InboxOutlined,
+  SettingOutlined,
+  TeamOutlined,
+  UserOutlined,
+  UserSwitchOutlined,
+} from "@ant-design/icons";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
 import { IdleSessionLogout } from "./components/IdleSessionLogout";
@@ -28,6 +38,7 @@ import {
 } from "./pages/users";
 import {
   RequestList,
+  RequestEdit,
   RequestShow,
 } from "./pages/requests";
 import { DashboardPage } from "./pages/dashboard";
@@ -108,49 +119,50 @@ function App() {
                   {
                     name: "dashboard",
                     list: "/",
-                    meta: { label: "Dashboard" },
+                    meta: { label: "Dashboard", icon: <DashboardOutlined /> },
                   },
                   {
                     name: "request-types",
                     list: "/request-types",
                     create: "/request-types/create",
                     edit: "/request-types/edit/:id",
-                    meta: { label: "Request types" },
+                    meta: { label: "Request types", icon: <AppstoreOutlined /> },
                   },
                   {
                     name: "requests",
                     list: "/requests",
+                    edit: "/requests/edit/:id",
                     show: "/requests/show/:id",
-                    meta: { label: "Requests" },
+                    meta: { label: "Requests", icon: <FileTextOutlined /> },
                   },
                   {
                     name: "users_with_requests",
                     list: "/users-with-requests",
-                    meta: { label: "Users & requests" },
+                    meta: { label: "Users & requests", icon: <UserSwitchOutlined /> },
                   },
                   {
                     name: "users",
                     list: "/users",
                     edit: "/users/edit/:id",
                     show: "/users/show/:id",
-                    meta: { label: "Users" },
+                    meta: { label: "Users", icon: <UserOutlined /> },
                   },
                   {
                     name: "daily-bulletin",
                     list: "/daily-bulletin",
-                    meta: { label: "Water tanker list" },
+                    meta: { label: "Water tanker list", icon: <InboxOutlined /> },
                   },
                   {
                     name: "service-options",
                     list: "/service-options",
-                    meta: { label: "Service options" },
+                    meta: { label: "Service options", icon: <SettingOutlined /> },
                   },
                   {
                     name: "sub-sectors",
                     list: "/sub-sectors",
                     create: "/sub-sectors/create",
                     edit: "/sub-sectors/edit/:id",
-                    meta: { label: "Sub-sectors" },
+                    meta: { label: "Sub-sectors", icon: <TeamOutlined /> },
                   },
                 ]}
                 options={{
@@ -185,6 +197,7 @@ function App() {
                     </Route>
                     <Route path="/requests">
                       <Route index element={<RequestList />} />
+                      <Route path="edit/:id" element={<RequestEdit />} />
                       <Route path="show/:id" element={<RequestShow />} />
                     </Route>
                     <Route path="/users-with-requests" element={<UsersWithRequestsPage />} />

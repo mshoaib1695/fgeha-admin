@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Show, TextField, DateField } from "@refinedev/antd";
 import { useShow, useInvalidate } from "@refinedev/core";
-import { Typography, Select, Button, Space, message } from "antd";
+import { Typography, Select, Button, Space, message, Image } from "antd";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 
 const { Title } = Typography;
@@ -50,6 +50,12 @@ export const RequestShow = () => {
     }
   };
 
+  const issueImageUrl = record?.issueImageUrl
+    ? String(record.issueImageUrl).startsWith("http")
+      ? String(record.issueImageUrl)
+      : `${API_URL.replace(/\/$/, "")}${String(record.issueImageUrl).startsWith("/") ? "" : "/"}${String(record.issueImageUrl)}`
+    : null;
+
   return (
     <Show isLoading={query?.isLoading}>
       <Title level={5}>ID</Title>
@@ -60,6 +66,12 @@ export const RequestShow = () => {
       <TextField value={record?.requestType?.name ?? record?.requestTypeId ?? "-"} />
       <Title level={5}>Description</Title>
       <TextField value={record?.description} />
+      <Title level={5}>Issue image</Title>
+      {issueImageUrl ? (
+        <Image src={issueImageUrl} alt="Issue image" style={{ maxWidth: 320, borderRadius: 8 }} />
+      ) : (
+        <TextField value="-" />
+      )}
       <Title level={5}>Status</Title>
       <Space>
         <Select

@@ -7,13 +7,14 @@ import { getVToken } from "../../lib/v";
 
 type RequestType = { id: number; name: string; slug: string };
 type OptionType = "form" | "list" | "rules" | "link";
+type IssueImageRequirement = "none" | "optional" | "required";
 type RuleItem = { description?: string };
 type OptionRecord = {
   id: number;
   requestTypeId: number;
   label: string;
   optionType: OptionType;
-  config: { listKey?: string; content?: string; url?: string; rules?: RuleItem[] } | null;
+  config: { issueImage?: IssueImageRequirement; listKey?: string; content?: string; url?: string; rules?: RuleItem[] } | null;
   displayOrder: number;
   imageUrl?: string | null;
 };
@@ -102,6 +103,7 @@ export const ServiceOptionsPage = () => {
       label: "",
       optionType: "form",
       displayOrder: options.length,
+      issueImage: "optional",
       listKey: undefined,
       rules: [{ description: "" }],
       url: "",
@@ -124,6 +126,7 @@ export const ServiceOptionsPage = () => {
       label: row.label,
       optionType: row.optionType,
       displayOrder: row.displayOrder,
+      issueImage: row.config?.issueImage ?? "optional",
       listKey: row.config?.listKey,
       rules,
       url: row.config?.url ?? "",
@@ -184,6 +187,7 @@ export const ServiceOptionsPage = () => {
       config: undefined as Record<string, unknown> | undefined,
       imageUrl: values.imageUrl?.trim() || null,
     };
+    if (values.optionType === "form") payload.config = { issueImage: values.issueImage ?? "optional" };
     if (values.optionType === "list") payload.config = { listKey: values.listKey };
     if (values.optionType === "rules") {
       const rulesList = Array.isArray(values.rules) ? values.rules : [];
@@ -333,6 +337,18 @@ export const ServiceOptionsPage = () => {
                 return (
                   <Form.Item name="listKey" label="List" rules={[{ required: true }]}>
                     <Select options={LIST_KEYS} placeholder="Select list type" />
+                  </Form.Item>
+                );
+              if (type === "form")
+                return (
+                  <Form.Item name="issueImage" label="Photo upload in request form" initialValue="optional">
+                    <Select
+                      options={[
+                        { value: "none", label: "Hidden" },
+                        { value: "optional", label: "Optional" },
+                        { value: "required", label: "Required" },
+                      ]}
+                    />
                   </Form.Item>
                 );
               if (type === "rules")

@@ -42,6 +42,7 @@ import {
   RequestShow,
 } from "./pages/requests";
 import { DashboardPage } from "./pages/dashboard";
+import { PrivacyPage } from "./pages/privacy";
 import {
   RequestTypeList,
   RequestTypeCreate,
@@ -173,6 +174,7 @@ function App() {
               >
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
                   <Route
                     element={
                       <Authenticated

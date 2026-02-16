@@ -242,7 +242,11 @@ export const ServiceOptionsPage = () => {
             method: "DELETE",
             headers: authHeaders(),
           });
-          if (!res.ok) throw new Error("Delete failed");
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            const msg = (err as { message?: string }).message;
+            throw new Error(typeof msg === "string" && msg.trim() ? msg : "Delete failed");
+          }
           message.success("Option deleted.");
           loadOptions();
         } catch (e) {

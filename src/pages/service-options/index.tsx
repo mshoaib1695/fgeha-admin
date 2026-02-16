@@ -49,6 +49,7 @@ export const ServiceOptionsPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [form] = Form.useForm();
 
   const loadRequestTypes = useCallback(async () => {
@@ -233,27 +234,27 @@ export const ServiceOptionsPage = () => {
     }
   };
 
-  const handleDelete = (id: number) => {
-    Modal.confirm({
-      title: "Delete option?",
-      onOk: async () => {
-        try {
-          const res = await fetch(`${API_URL}/request-type-options/${id}`, {
-            method: "DELETE",
-            headers: authHeaders(),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            const msg = (err as { message?: string }).message;
-            throw new Error(typeof msg === "string" && msg.trim() ? msg : "Delete failed");
-          }
-          message.success("Option deleted.");
-          loadOptions();
-        } catch (e) {
-          message.error((e as Error).message ?? "Failed to delete.");
-        }
-      },
-    });
+  const handleDelete = async (id: number) => {
+    const confirmed = window.confirm("Delete option?");
+    if (!confirmed) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`${API_URL}/request-type-options/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = (err as { message?: string }).message;
+        throw new Error(typeof msg === "string" && msg.trim() ? msg : "Delete failed");
+      }
+      message.success("Option deleted.");
+      loadOptions();
+    } catch (e) {
+      message.error((e as Error).message ?? "Failed to delete.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const columns = [
@@ -284,7 +285,18 @@ export const ServiceOptionsPage = () => {
       render: (_: unknown, row: OptionRecord) => (
         <Space>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(row.id)} />
+          <Button
+            type="link"
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            loading={deletingId === row.id}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void handleDelete(row.id);
+            }}
+          />
         </Space>
       ),
     },

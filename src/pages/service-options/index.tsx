@@ -6,7 +6,7 @@ import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
 type RequestType = { id: number; name: string; slug: string };
-type OptionType = "form" | "list" | "rules" | "link";
+type OptionType = "form" | "list" | "rules" | "link" | "phone";
 type IssueImageRequirement = "none" | "optional" | "required";
 type RuleItem = { description?: string };
 type OptionRecord = {
@@ -14,7 +14,14 @@ type OptionRecord = {
   requestTypeId: number;
   label: string;
   optionType: OptionType;
-  config: { issueImage?: IssueImageRequirement; listKey?: string; content?: string; url?: string; rules?: RuleItem[] } | null;
+  config: {
+    issueImage?: IssueImageRequirement;
+    listKey?: string;
+    content?: string;
+    url?: string;
+    phoneNumber?: string;
+    rules?: RuleItem[];
+  } | null;
   displayOrder: number;
   imageUrl?: string | null;
 };
@@ -24,6 +31,7 @@ const OPTION_TYPES: { value: OptionType; label: string }[] = [
   { value: "list", label: "List (e.g. tanker list, requests)" },
   { value: "rules", label: "Rules (static content)" },
   { value: "link", label: "Link (URL)" },
+  { value: "phone", label: "Phone (tap to call)" },
 ];
 const LIST_KEYS = [
   { value: "daily_bulletin", label: "Water tanker list (daily bulletin)" },
@@ -108,6 +116,7 @@ export const ServiceOptionsPage = () => {
       listKey: undefined,
       rules: [{ description: "" }],
       url: "",
+      phoneNumber: "",
       imageUrl: "",
     });
     setModalOpen(true);
@@ -132,6 +141,7 @@ export const ServiceOptionsPage = () => {
       rules,
       url: row.config?.url ?? "",
       imageUrl: row.imageUrl ?? "",
+      phoneNumber: row.config?.phoneNumber ?? "",
     });
     setModalOpen(true);
   };
@@ -199,6 +209,7 @@ export const ServiceOptionsPage = () => {
       };
     }
     if (values.optionType === "link") payload.config = { url: values.url ?? "" };
+    if (values.optionType === "phone") payload.config = { phoneNumber: values.phoneNumber ?? "" };
 
     setSaving(true);
     try {
@@ -274,6 +285,7 @@ export const ServiceOptionsPage = () => {
             return (row.config.content as string).slice(0, 40) + (row.config.content.length > 40 ? "…" : "");
         }
         if (row.optionType === "link" && row.config?.url) return row.config.url;
+        if (row.optionType === "phone" && row.config?.phoneNumber) return row.config.phoneNumber;
         return "—";
       },
     },
@@ -397,6 +409,16 @@ export const ServiceOptionsPage = () => {
                 return (
                   <Form.Item name="url" label="URL">
                     <Input placeholder="https://..." />
+                  </Form.Item>
+                );
+              if (type === "phone")
+                return (
+                  <Form.Item
+                    name="phoneNumber"
+                    label="Phone / mobile number"
+                    rules={[{ required: true, message: "Please enter phone number" }]}
+                  >
+                    <Input placeholder="+92 300 1234567" />
                   </Form.Item>
                 );
               return null;

@@ -12,6 +12,7 @@ import { useInvalidate, useList } from "@refinedev/core";
 import { Table, Tag, Space, Typography, Button, Modal, Form, Select, DatePicker, message } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import type { BaseRecord } from "@refinedev/core";
+import type { CrudFilter } from "@refinedev/core";
 import * as XLSX from "xlsx";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
@@ -270,21 +271,17 @@ export const RequestList = () => {
             value: Number(o.id),
             label: String(o.label ?? `Option #${o.id}`),
           }))}
-          onChange={(v) => setSelectedServiceOptionId(v ?? null)}
-          onClear={() => {
-            setSelectedServiceOptionId(null);
-            setFilters((prev) => prev.filter((f) => f.field !== "requestTypeOptionId"), "replace");
-          }}
-          onSelect={(v) => {
-            const optionId = Number(v);
+          onChange={(v) => {
+            const optionId = v == null ? null : Number(v);
             setSelectedServiceOptionId(optionId);
-            setFilters(
-              (prev) => [
-                ...prev.filter((f) => f.field !== "requestTypeOptionId"),
-                { field: "requestTypeOptionId", operator: "eq", value: optionId },
-              ],
-              "replace",
-            );
+            if (optionId == null) {
+              setFilters([], "replace");
+              return;
+            }
+            const filters: CrudFilter[] = [
+              { field: "requestTypeOptionId", operator: "eq", value: optionId },
+            ];
+            setFilters(filters, "merge");
           }}
         />
       </Space>

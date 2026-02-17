@@ -24,6 +24,7 @@ type OptionRecord = {
   } | null;
   displayOrder: number;
   imageUrl?: string | null;
+  requestNumberPrefix?: string | null;
 };
 
 const OPTION_TYPES: { value: OptionType; label: string }[] = [
@@ -118,6 +119,7 @@ export const ServiceOptionsPage = () => {
       url: "",
       phoneNumber: "",
       imageUrl: "",
+      requestNumberPrefix: "",
     });
     setModalOpen(true);
   };
@@ -142,6 +144,7 @@ export const ServiceOptionsPage = () => {
       url: row.config?.url ?? "",
       imageUrl: row.imageUrl ?? "",
       phoneNumber: row.config?.phoneNumber ?? "",
+      requestNumberPrefix: row.requestNumberPrefix ?? "",
     });
     setModalOpen(true);
   };
@@ -197,6 +200,7 @@ export const ServiceOptionsPage = () => {
       displayOrder: values.displayOrder ?? 0,
       config: undefined as Record<string, unknown> | undefined,
       imageUrl: values.imageUrl?.trim() || null,
+      requestNumberPrefix: values.requestNumberPrefix?.trim()?.toUpperCase() || null,
     };
     if (values.optionType === "form") payload.config = { issueImage: values.issueImage ?? "optional" };
     if (values.optionType === "list") payload.config = { listKey: values.listKey };
@@ -223,6 +227,7 @@ export const ServiceOptionsPage = () => {
             displayOrder: payload.displayOrder,
             config: payload.config ?? null,
             imageUrl: payload.imageUrl,
+            requestNumberPrefix: payload.requestNumberPrefix,
           }),
         });
         if (!res.ok) throw new Error("Update failed");
@@ -422,6 +427,22 @@ export const ServiceOptionsPage = () => {
                   </Form.Item>
                 );
               return null;
+            }}
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.optionType !== curr.optionType}>
+            {({ getFieldValue }) => {
+              const type = getFieldValue("optionType");
+              if (type !== "form") return null;
+              return (
+                <Form.Item
+                  name="requestNumberPrefix"
+                  label="Request ID prefix"
+                  rules={[{ required: true, message: "Prefix is required for form option" }]}
+                  extra='Example: "OWT" creates OWT#0001'
+                >
+                  <Input maxLength={20} placeholder="e.g. OWT" />
+                </Form.Item>
+              );
             }}
           </Form.Item>
           <Form.Item name="displayOrder" label="Display order">

@@ -41,12 +41,14 @@ const STATUS_LABELS: Record<string, string> = {
 
 function buildQuery(params: {
   requestTypeId?: number;
+  requestTypeOptionId?: number;
   status?: string;
   dateFrom?: string;
   dateTo?: string;
 }): string {
   const q = new URLSearchParams();
   if (params.requestTypeId != null) q.set("requestTypeId", String(params.requestTypeId));
+  if (params.requestTypeOptionId != null) q.set("requestTypeOptionId", String(params.requestTypeOptionId));
   if (params.status) q.set("status", params.status);
   if (params.dateFrom) q.set("dateFrom", params.dateFrom);
   if (params.dateTo) q.set("dateTo", params.dateTo);
@@ -57,7 +59,7 @@ function buildQuery(params: {
 export const RequestList = () => {
   const [searchParams] = useSearchParams();
   const filterUserId = searchParams.get("userId");
-  const { tableProps } = useTable({
+  const { tableProps, setFilters } = useTable({
     resource: "requests",
     syncWithLocation: true,
   });
@@ -65,11 +67,22 @@ export const RequestList = () => {
     resource: "request-types",
     sorters: [{ field: "displayOrder", order: "asc" }],
   });
+  const { result: serviceOptionsResult } = useList({
+    resource: "request-type-options",
+    pagination: { mode: "off" },
+    sorters: [{ field: "displayOrder", order: "asc" }],
+  });
   const { result: subSectorsResult } = useList({
     resource: "sub-sectors",
     sorters: [{ field: "name", order: "asc" }],
   });
   const requestTypes = (requestTypesResult?.data ?? []) as BaseRecord[];
+  const serviceOptions = (serviceOptionsResult?.data ?? []) as BaseRecord[];
+  const serviceOptionLabelById = new Map<number, string>(
+    serviceOptions
+      .map((o) => [Number(o.id), String(o.label ?? "").trim()] as const)
+      .filter(([id, label]) => !Number.isNaN(id) && !!label),
+  );
   const subSectors = (subSectorsResult?.data ?? []) as BaseRecord[];
   const subSectorNameById = new Map<number, string>(
     subSectors
@@ -79,19 +92,20 @@ export const RequestList = () => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
+  const [selectedServiceOptionId, setSelectedServiceOptionId] = useState<number | null>(null);
   const [form] = Form.useForm();
   const invalidate = useInvalidate();
 
-  const dataSource = filterUserId
-    ? (tableProps.dataSource ?? []).filter(
-        (r: BaseRecord) => String(r.userId) === filterUserId
-      )
-    : tableProps.dataSource;
+  const dataSource = (tableProps.dataSource ?? []).filter((r: BaseRecord) => {
+    if (filterUserId && String(r.userId) !== filterUserId) return false;
+    return true;
+  });
 
   const handleExport = async () => {
     const values = await form.validateFields().catch(() => null);
     if (values == null) return;
     const requestTypeId = values.requestType as number | undefined;
+    const requestTypeOptionId = values.requestTypeOption as number | undefined;
     const status = values.status as string | undefined;
     const dateRange = values.dateRange as Array<{ format: (s: string) => string }> | undefined;
     const dateFrom = dateRange?.[0]?.format("YYYY-MM-DD");
@@ -103,6 +117,7 @@ export const RequestList = () => {
       const vToken = getVToken();
       const query = buildQuery({
         requestTypeId: requestTypeId ?? undefined,
+        requestTypeOptionId: requestTypeOptionId ?? undefined,
         status: status ?? undefined,
         dateFrom,
         dateTo,
@@ -127,6 +142,7 @@ export const RequestList = () => {
           "S.No": index + 1,
           "Request Id": r?.requestNumber ?? "",
           "Request Time": r?.createdAt ? new Date(r.createdAt as string).toLocaleString() : "",
+          "Service Option": serviceOptionLabelById.get(Number(r?.requestTypeOptionId)) ?? "-",
           Name: r?.user?.fullName ?? "-",
           "Mobile No": mobile || "-",
           "H. No": r?.houseNo ?? "",
@@ -216,6 +232,16 @@ export const RequestList = () => {
               }))}
             />
           </Form.Item>
+          <Form.Item name="requestTypeOption" label="Service option">
+            <Select
+              allowClear
+              placeholder="All service options"
+              options={serviceOptions.map((o) => ({
+                value: o.id,
+                label: o.label ?? `Option #${o.id}`,
+              }))}
+            />
+          </Form.Item>
           <Form.Item name="status" label="Status">
             <Select
               allowClear
@@ -233,6 +259,35 @@ export const RequestList = () => {
           Filtered by user ID: {filterUserId}
         </Typography.Text>
       )}
+      <Space style={{ marginBottom: 12 }} wrap>
+        <Typography.Text type="secondary">Service option:</Typography.Text>
+        <Select
+          allowClear
+          placeholder="All options"
+          value={selectedServiceOptionId ?? undefined}
+          style={{ minWidth: 260 }}
+          options={serviceOptions.map((o) => ({
+            value: Number(o.id),
+            label: String(o.label ?? `Option #${o.id}`),
+          }))}
+          onChange={(v) => setSelectedServiceOptionId(v ?? null)}
+          onClear={() => {
+            setSelectedServiceOptionId(null);
+            setFilters((prev) => prev.filter((f) => f.field !== "requestTypeOptionId"), "replace");
+          }}
+          onSelect={(v) => {
+            const optionId = Number(v);
+            setSelectedServiceOptionId(optionId);
+            setFilters(
+              (prev) => [
+                ...prev.filter((f) => f.field !== "requestTypeOptionId"),
+                { field: "requestTypeOptionId", operator: "eq", value: optionId },
+              ],
+              "replace",
+            );
+          }}
+        />
+      </Space>
       <Table
         {...tableProps}
         dataSource={dataSource}
@@ -260,6 +315,16 @@ export const RequestList = () => {
           width={150}
           render={(_, record: BaseRecord) =>
             record?.requestType?.name ?? record?.requestTypeId ?? "-"
+          }
+        />
+        <Table.Column
+          dataIndex={["requestTypeOption", "label"]}
+          title="Service option"
+          width={170}
+          render={(_, record: BaseRecord) =>
+            record?.requestTypeOption?.label ??
+            serviceOptionLabelById.get(Number(record?.requestTypeOptionId)) ??
+            "-"
           }
         />
         <Table.Column dataIndex="houseNo" title="House no" width={110} responsive={["md"]} />

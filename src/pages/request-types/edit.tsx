@@ -66,17 +66,9 @@ export const RequestTypeEdit = () => {
   }, [formProps.initialValues]);
 
   const handleFinish = (values: Record<string, unknown>) => {
-    const prefixRaw = values.requestNumberPrefix;
-    const requestNumberPrefix =
-      typeof prefixRaw === "string" ? prefixRaw.trim().toUpperCase() : prefixRaw;
     let next = !windowEnabled
       ? { ...values, restrictionStartTime: null, restrictionEndTime: null, restrictionDays: null }
       : values;
-    next = {
-      ...next,
-      requestNumberPrefix:
-        requestNumberPrefix === "" || requestNumberPrefix == null ? null : requestNumberPrefix,
-    };
     if (!underConstructionEnabled) {
       next = { ...next, underConstruction: false, underConstructionMessage: null };
     } else {
@@ -104,13 +96,6 @@ export const RequestTypeEdit = () => {
         </Form.Item>
         <Form.Item label="Display order" name="displayOrder">
           <InputNumber min={0} style={{ width: 120 }} />
-        </Form.Item>
-        <Form.Item
-          label="Request ID prefix"
-          name="requestNumberPrefix"
-          extra='Shown in generated request IDs (example: "WTR" creates WTR#0001). Leave empty to auto-generate from name.'
-        >
-          <Input maxLength={20} placeholder="e.g. WTR" />
         </Form.Item>
         <Card size="small" title="Maintenance page" style={{ marginBottom: 24 }}>
           <Form.Item>

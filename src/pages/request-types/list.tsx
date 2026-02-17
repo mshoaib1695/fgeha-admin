@@ -19,12 +19,6 @@ export const RequestTypeList = () => {
         <Table.Column dataIndex="id" title="ID" width={70} />
         <Table.Column dataIndex="name" title="Name" />
         <Table.Column dataIndex="slug" title="Slug" />
-        <Table.Column
-          dataIndex="requestNumberPrefix"
-          title="Request ID prefix"
-          width={150}
-          render={(v: string | null) => (v && v.trim() ? v : "Auto")}
-        />
         <Table.Column dataIndex="displayOrder" title="Order" width={80} />
         <Table.Column
           title="Open window"

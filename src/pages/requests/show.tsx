@@ -76,6 +76,11 @@ export const RequestShow = () => {
                   label: "Type",
                   children: <TextField value={record?.requestType?.name ?? record?.requestTypeId ?? "-"} />,
                 },
+                {
+                  key: "serviceOption",
+                  label: "Service option",
+                  children: <TextField value={record?.requestTypeOption?.label ?? "-"} />,
+                },
                 { key: "houseNo", label: "House no", children: <TextField value={record?.houseNo ?? "-"} /> },
                 { key: "streetNo", label: "Street no", children: <TextField value={record?.streetNo ?? "-"} /> },
                 { key: "subSector", label: "Sub-sector", children: <TextField value={record?.subSectorId ?? "-"} /> },

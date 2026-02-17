@@ -379,6 +379,25 @@ export const DashboardPage = () => {
           ]}
         />
       </Card>
+
+      <Divider style={{ margin: "24px 0 16px 0" }} />
+      <Card style={cardStyle}>
+        <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+          <div>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              Reports
+            </Typography.Title>
+            <Typography.Paragraph type="secondary" style={{ margin: "6px 0 0 0" }}>
+              Open full analytics and export-ready reports from the dedicated page.
+            </Typography.Paragraph>
+          </div>
+          <a href="/reports">
+            <Tag color="processing" style={{ cursor: "pointer" }}>
+              Open Reports
+            </Tag>
+          </a>
+        </Flex>
+      </Card>
     </div>
   );
 };

@@ -4,7 +4,6 @@ import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import {
   ErrorComponent,
   ThemedLayout,
-  ThemedSider,
   useNotificationProvider,
 } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
@@ -17,6 +16,7 @@ import routerProvider, {
 import { App as AntdApp } from "antd";
 import {
   AppstoreOutlined,
+  BarChartOutlined,
   DashboardOutlined,
   FileTextOutlined,
   InboxOutlined,
@@ -27,6 +27,7 @@ import {
 } from "@ant-design/icons";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
+import { CustomSider } from "./components/sider/CustomSider";
 import { IdleSessionLogout } from "./components/IdleSessionLogout";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { VGate } from "./lib/VGate";
@@ -52,6 +53,7 @@ import {
 import { UsersWithRequestsPage } from "./pages/users-with-requests";
 import { DailyBulletinList } from "./pages/daily-bulletin";
 import { ServiceOptionsPage } from "./pages/service-options";
+import { ReportsPage } from "./pages/reports";
 import {
   SubSectorList,
   SubSectorCreate,
@@ -131,6 +133,11 @@ function App() {
                     meta: { label: "Request types", icon: <AppstoreOutlined /> },
                   },
                   {
+                    name: "reports",
+                    list: "/reports",
+                    meta: { label: "Reports", icon: <BarChartOutlined /> },
+                  },
+                  {
                     name: "requests",
                     list: "/requests",
                     edit: "/requests/edit/:id",
@@ -185,7 +192,7 @@ function App() {
                       >
                         <ThemedLayout
                           Header={() => <Header sticky />}
-                          Sider={(props) => <ThemedSider {...props} fixed Title={SiderTitle} />}
+                          Sider={(props) => <CustomSider {...props} fixed Title={SiderTitle} />}
                         >
                           <IdleSessionLogout />
                           <Outlet />
@@ -194,6 +201,7 @@ function App() {
                     }
                   >
                     <Route index element={<DashboardPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
                     <Route path="/request-types">
                       <Route index element={<RequestTypeList />} />
                       <Route path="create" element={<RequestTypeCreate />} />

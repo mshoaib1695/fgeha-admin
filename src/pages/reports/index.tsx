@@ -12,7 +12,7 @@ export const ReportsPage = () => {
           Generate, analyze, and export all operational and analytics reports from one dedicated page.
         </Typography.Paragraph>
       </Card>
-      <ReportsPanel />
+      <ReportsPanel showReportTableSection showAdvancedAnalyticsSection={false} />
     </div>
   );
 };

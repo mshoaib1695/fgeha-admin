@@ -23,6 +23,7 @@ import {
   TagsOutlined,
 } from "@ant-design/icons";
 import { API_URL } from "../../providers/constants";
+import { ReportsPanel } from "./ReportsPanel";
 
 interface StatsByType {
   requestTypeId: number;
@@ -380,6 +381,8 @@ export const DashboardPage = () => {
         />
       </Card>
 
+      <Divider style={{ margin: "24px 0 16px 0" }} />
+      <ReportsPanel showReportTableSection={false} showAdvancedAnalyticsSection />
       <Divider style={{ margin: "24px 0 16px 0" }} />
       <Card style={cardStyle}>
         <Flex justify="space-between" align="center" gap={12} wrap="wrap">

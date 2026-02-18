@@ -13,6 +13,7 @@ type OptionRecord = {
   id: number;
   requestTypeId: number;
   label: string;
+  slug?: string | null;
   optionType: OptionType;
   config: {
     issueImage?: IssueImageRequirement;
@@ -111,6 +112,7 @@ export const ServiceOptionsPage = () => {
     setEditingId(null);
     form.setFieldsValue({
       label: "",
+      slug: "",
       optionType: "form",
       displayOrder: options.length,
       issueImage: "optional",
@@ -136,6 +138,7 @@ export const ServiceOptionsPage = () => {
     if (rules.length === 0) rules = [{ description: "" }];
     form.setFieldsValue({
       label: row.label,
+      slug: row.slug ?? "",
       optionType: row.optionType,
       displayOrder: row.displayOrder,
       issueImage: row.config?.issueImage ?? "optional",
@@ -196,6 +199,7 @@ export const ServiceOptionsPage = () => {
     const payload = {
       requestTypeId: selectedTypeId,
       label: values.label?.trim(),
+      slug: values.slug?.trim() || null,
       optionType: values.optionType,
       displayOrder: values.displayOrder ?? 0,
       config: undefined as Record<string, unknown> | undefined,
@@ -224,6 +228,7 @@ export const ServiceOptionsPage = () => {
           body: JSON.stringify({
             label: payload.label,
             optionType: payload.optionType,
+            slug: payload.slug,
             displayOrder: payload.displayOrder,
             config: payload.config ?? null,
             imageUrl: payload.imageUrl,
@@ -275,6 +280,7 @@ export const ServiceOptionsPage = () => {
 
   const columns = [
     { title: "Label", dataIndex: "label", key: "label" },
+    { title: "Slug", dataIndex: "slug", key: "slug", render: (value: string | null | undefined) => value || "—" },
     { title: "Type", dataIndex: "optionType", key: "optionType" },
     {
       title: "Config",
@@ -359,6 +365,13 @@ export const ServiceOptionsPage = () => {
         <Form form={form} layout="vertical">
           <Form.Item name="label" label="Label" rules={[{ required: true }]}>
             <Input placeholder="e.g. Order Water Tanker" />
+          </Form.Item>
+          <Form.Item
+            name="slug"
+            label="Slug (optional)"
+            extra="Used in analytics/report filters. Auto-generated from label if empty."
+          >
+            <Input placeholder="e.g. order_water_tanker" maxLength={120} />
           </Form.Item>
           <Form.Item name="optionType" label="Type" rules={[{ required: true }]}>
             <Select options={OPTION_TYPES} />

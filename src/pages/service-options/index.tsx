@@ -6,7 +6,7 @@ import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
 type RequestType = { id: number; name: string; slug: string };
-type OptionType = "form" | "list" | "rules" | "link" | "phone";
+type OptionType = "form" | "list" | "rules" | "notification" | "link" | "phone";
 type IssueImageRequirement = "none" | "optional" | "required";
 type RuleItem = { description?: string };
 type OptionRecord = {
@@ -32,6 +32,7 @@ const OPTION_TYPES: { value: OptionType; label: string }[] = [
   { value: "form", label: "Form (create request)" },
   { value: "list", label: "List (e.g. tanker list, requests)" },
   { value: "rules", label: "Rules (static content)" },
+  { value: "notification", label: "Notification (single content block)" },
   { value: "link", label: "Link (URL)" },
   { value: "phone", label: "Phone (tap to call)" },
 ];
@@ -118,6 +119,7 @@ export const ServiceOptionsPage = () => {
       issueImage: "optional",
       listKey: undefined,
       rules: [{ description: "" }],
+      notificationContent: "",
       url: "",
       phoneNumber: "",
       imageUrl: "",
@@ -144,6 +146,7 @@ export const ServiceOptionsPage = () => {
       issueImage: row.config?.issueImage ?? "optional",
       listKey: row.config?.listKey,
       rules,
+      notificationContent: row.config?.content ?? "",
       url: row.config?.url ?? "",
       imageUrl: row.imageUrl ?? "",
       phoneNumber: row.config?.phoneNumber ?? "",
@@ -215,6 +218,9 @@ export const ServiceOptionsPage = () => {
           .map((r: RuleItem) => ({ description: (r.description ?? "").trim() }))
           .filter((r: RuleItem) => r.description),
       };
+    }
+    if (values.optionType === "notification") {
+      payload.config = { content: String(values.notificationContent ?? "").trim() };
     }
     if (values.optionType === "link") payload.config = { url: values.url ?? "" };
     if (values.optionType === "phone") payload.config = { phoneNumber: values.phoneNumber ?? "" };
@@ -292,6 +298,10 @@ export const ServiceOptionsPage = () => {
           const rules = row.config?.rules;
           if (Array.isArray(rules) && rules.length > 0)
             return `${rules.length} rule(s)`;
+          if (row.config?.content)
+            return (row.config.content as string).slice(0, 40) + (row.config.content.length > 40 ? "…" : "");
+        }
+        if (row.optionType === "notification") {
           if (row.config?.content)
             return (row.config.content as string).slice(0, 40) + (row.config.content.length > 40 ? "…" : "");
         }
@@ -421,6 +431,16 @@ export const ServiceOptionsPage = () => {
                         </>
                       )}
                     </Form.List>
+                  </Form.Item>
+                );
+              if (type === "notification")
+                return (
+                  <Form.Item
+                    name="notificationContent"
+                    label="Notification content"
+                    rules={[{ required: true, message: "Please enter notification content" }]}
+                  >
+                    <Input.TextArea rows={4} placeholder="Notification text shown in app" />
                   </Form.Item>
                 );
               if (type === "link")

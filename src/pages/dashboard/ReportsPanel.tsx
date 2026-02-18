@@ -23,6 +23,7 @@ import * as XLSX from "xlsx";
 import { API_URL } from "../../providers/constants";
 
 type ReportsPeriod = "today" | "week" | "month" | "custom";
+type TankerView = "detailed" | "summary";
 type ReportKey =
   | "usersBySubSectorHouse"
   | "requestsPerHouseDateStatus"
@@ -74,6 +75,18 @@ type ReportsResponse = {
       requested: number;
       delivered: number;
       pending: number;
+    }>;
+    requests: Array<{
+      requestId: number;
+      requestNumber: string | null;
+      createdAt: string;
+      subSectorName: string;
+      houseNo: string;
+      streetNo: string;
+      serviceOptionLabel: string;
+      status: string;
+      userName: string;
+      mobileNo: string;
     }>;
   };
   insights?: {
@@ -130,7 +143,7 @@ const EMPTY_REPORT: ReportsResponse = {
   requestsPerHouseDateStatus: [],
   usersSummary: { totalUsers: 0, bySubSector: [] },
   requestsSummary: { totalRequests: 0, bySubSector: [], byStatus: [] },
-  tankerSummary: { requested: 0, delivered: 0, pending: 0, cancelled: 0, bySubSector: [] },
+  tankerSummary: { requested: 0, delivered: 0, pending: 0, cancelled: 0, bySubSector: [], requests: [] },
   insights: {
     completionRate: 0,
     cancellationRate: 0,
@@ -189,6 +202,7 @@ function normalizeResponse(raw: unknown): ReportsResponse | undefined {
       pending: p.tankerSummary?.pending ?? 0,
       cancelled: p.tankerSummary?.cancelled ?? 0,
       bySubSector: Array.isArray(p.tankerSummary?.bySubSector) ? p.tankerSummary.bySubSector : [],
+      requests: Array.isArray(p.tankerSummary?.requests) ? p.tankerSummary.requests : [],
     },
     insights: {
       completionRate: p.insights?.completionRate ?? 0,
@@ -226,6 +240,7 @@ export function ReportsPanel({
   const { token } = theme.useToken();
   const [period, setPeriod] = useState<ReportsPeriod>("month");
   const [selectedReport, setSelectedReport] = useState<ReportKey>("usersBySubSectorHouse");
+  const [tankerView, setTankerView] = useState<TankerView>("detailed");
   const [customRange, setCustomRange] = useState<[string | null, string | null]>([null, null]);
   const [exporting, setExporting] = useState(false);
   const [from, to] = customRange;
@@ -306,36 +321,72 @@ export function ReportsPanel({
       };
     }
 
+    if (tankerView === "summary") {
+      return {
+        dataSource: report.tankerSummary.bySubSector.map((r, i) => ({ key: i + 1, ...r })),
+        columns: [
+          { title: "Sub-sector", dataIndex: "subSectorName" },
+          {
+            title: "Requested",
+            dataIndex: "requested",
+            render: (value: number) => <Tag color="gold">{value}</Tag>,
+          },
+          {
+            title: "Delivered",
+            dataIndex: "delivered",
+            render: (value: number) => <Tag color="green">{value}</Tag>,
+          },
+          {
+            title: "Pending",
+            dataIndex: "pending",
+            render: (value: number) => <Tag color={value > 0 ? "orange" : "default"}>{value}</Tag>,
+          },
+        ],
+      };
+    }
+
     return {
-      dataSource: report.tankerSummary.bySubSector.map((r, i) => ({ key: i + 1, ...r })),
+      dataSource: report.tankerSummary.requests.map((r) => ({
+        key: r.requestId || `${r.createdAt}-${r.houseNo}`,
+        ...r,
+      })),
       columns: [
+        { title: "Req #", dataIndex: "requestNumber", render: (value: string | null) => value || "-" },
+        {
+          title: "Date",
+          dataIndex: "createdAt",
+          render: (value: string) => {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString();
+          },
+        },
         { title: "Sub-sector", dataIndex: "subSectorName" },
+        { title: "House", dataIndex: "houseNo" },
+        { title: "Street", dataIndex: "streetNo" },
+        { title: "Service Option", dataIndex: "serviceOptionLabel" },
+        { title: "Name", dataIndex: "userName" },
+        { title: "Mobile", dataIndex: "mobileNo" },
         {
-          title: "Requested",
-          dataIndex: "requested",
-          render: (value: number) => <Tag color="gold">{value}</Tag>,
-        },
-        {
-          title: "Delivered",
-          dataIndex: "delivered",
-          render: (value: number) => <Tag color="green">{value}</Tag>,
-        },
-        {
-          title: "Pending",
-          dataIndex: "pending",
-          render: (value: number) => <Tag color={value > 0 ? "orange" : "default"}>{value}</Tag>,
+          title: "Status",
+          dataIndex: "status",
+          render: (status: string) => (
+            <Tag color={STATUS_COLOR[status] ?? "default"}>
+              {(status ?? "").replaceAll("_", " ").toUpperCase() || "N/A"}
+            </Tag>
+          ),
         },
       ],
     };
-  }, [report, selectedReport]);
+  }, [report, selectedReport, tankerView]);
 
   const selectedReportLabel = useMemo(() => {
     if (selectedReport === "usersBySubSectorHouse") return "Resident Register";
     if (selectedReport === "requestsPerHouseDateStatus") return "Complaints by House";
     if (selectedReport === "usersSummaryBySubSector") return "Registration Summary";
     if (selectedReport === "requestsSummaryBySubSector") return "Requests Summary";
-    return "Water Tanker Summary";
-  }, [selectedReport]);
+    return tankerView === "summary" ? "Water Tanker Summary" : "Water Tanker Requests";
+  }, [selectedReport, tankerView]);
 
   const exportSelectedReport = () => {
     if (!report) {
@@ -358,7 +409,9 @@ export function ReportsPanel({
         if (selectedReport === "requestsSummaryBySubSector") {
           return { name: "Requests Summary", rows: report.requestsSummary.bySubSector };
         }
-        return { name: "Water Tanker Summary", rows: report.tankerSummary.bySubSector };
+        return tankerView === "summary"
+          ? { name: "Water Tanker Summary", rows: report.tankerSummary.bySubSector }
+          : { name: "Water Tanker Requests", rows: report.tankerSummary.requests };
       })();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(selectedSheet.rows), selectedSheet.name);
       XLSX.utils.book_append_sheet(
@@ -478,6 +531,20 @@ export function ReportsPanel({
             onChange={(value) => setSelectedReport(value as ReportKey)}
           />
         </Space>
+
+        {selectedReport === "tankerSummaryBySubSector" ? (
+          <Space wrap>
+            <Typography.Text type="secondary">Tanker view</Typography.Text>
+            <Segmented
+              value={tankerView}
+              options={[
+                { label: "Detailed Requests", value: "detailed" },
+                { label: "Sub-sector Summary", value: "summary" },
+              ]}
+              onChange={(value) => setTankerView(value as TankerView)}
+            />
+          </Space>
+        ) : null}
 
         <Table
           key={selectedReport}

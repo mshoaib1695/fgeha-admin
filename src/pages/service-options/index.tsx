@@ -296,7 +296,7 @@ export const ServiceOptionsPage = () => {
 
   const columns = [
     { title: "Label", dataIndex: "label", key: "label" },
-    { title: "Slug", dataIndex: "slug", key: "slug", render: (value: string | null | undefined) => value || "—" },
+    { title: "Hint", dataIndex: "hint", key: "hint", render: (value: string | null | undefined) => value || "—" },
     { title: "Type", dataIndex: "optionType", key: "optionType" },
     {
       title: "Config",

@@ -44,9 +44,10 @@ type ReportsResponse = {
   usersBySubSectorHouse: Array<{
     subSectorName: string;
     houseNo: string;
+    streetNo: string;
     userName: string;
     mobileNo: string;
-    usersInHouse: number;
+    usersInHouse?: number;
   }>;
   requestsPerHouseDateStatus: Array<{
     date: string;
@@ -272,7 +273,7 @@ export function ReportsPanel({
         columns: [
           { title: "Sub-sector", dataIndex: "subSectorName" },
           { title: "House", dataIndex: "houseNo" },
-          { title: "Users in house", dataIndex: "usersInHouse" },
+          { title: "Street", dataIndex: "streetNo" },
           { title: "Name", dataIndex: "userName" },
           { title: "Mobile", dataIndex: "mobileNo" },
         ],
@@ -283,7 +284,15 @@ export function ReportsPanel({
       return {
         dataSource: report.requestsPerHouseDateStatus.map((r, i) => ({ key: i + 1, ...r })),
         columns: [
-          { title: "Date", dataIndex: "date" },
+          {
+            title: "Date",
+            dataIndex: "date",
+            render: (value: string) => {
+              if (!value) return "—";
+              const d = new Date(value);
+              return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString();
+            },
+          },
           { title: "Sub-sector", dataIndex: "subSectorName" },
           { title: "House", dataIndex: "houseNo" },
           { title: "Street", dataIndex: "streetNo" },

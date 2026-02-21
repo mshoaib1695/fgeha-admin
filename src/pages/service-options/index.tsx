@@ -26,6 +26,7 @@ type OptionRecord = {
   displayOrder: number;
   imageUrl?: string | null;
   headerIcon?: string | null;
+  hint?: string | null;
   requestNumberPrefix?: string | null;
 };
 
@@ -125,6 +126,7 @@ export const ServiceOptionsPage = () => {
       phoneNumber: "",
       imageUrl: "",
       headerIcon: "",
+      hint: "",
       requestNumberPrefix: "",
     });
     setModalOpen(true);
@@ -152,6 +154,7 @@ export const ServiceOptionsPage = () => {
       url: row.config?.url ?? "",
       imageUrl: row.imageUrl ?? "",
       headerIcon: row.headerIcon ?? "",
+      hint: row.hint ?? "",
       phoneNumber: row.config?.phoneNumber ?? "",
       requestNumberPrefix: row.requestNumberPrefix ?? "",
     });
@@ -211,6 +214,7 @@ export const ServiceOptionsPage = () => {
       config: undefined as Record<string, unknown> | undefined,
       imageUrl: values.imageUrl?.trim() || null,
       headerIcon: values.headerIcon?.trim() || null,
+      hint: values.hint?.trim() || null,
       requestNumberPrefix: values.requestNumberPrefix?.trim()?.toUpperCase() || null,
     };
     if (values.optionType === "form") payload.config = { issueImage: values.issueImage ?? "optional" };
@@ -243,6 +247,7 @@ export const ServiceOptionsPage = () => {
             config: payload.config ?? null,
             imageUrl: payload.imageUrl,
             headerIcon: payload.headerIcon,
+            hint: payload.hint,
             requestNumberPrefix: payload.requestNumberPrefix,
           }),
         });
@@ -390,6 +395,13 @@ export const ServiceOptionsPage = () => {
           </Form.Item>
           <Form.Item name="optionType" label="Type" rules={[{ required: true }]}>
             <Select options={OPTION_TYPES} />
+          </Form.Item>
+          <Form.Item
+            name="hint"
+            label="Hint (text under option in app)"
+            extra="e.g. Submit a request, Open list, View rules. Shown under the option label. Leave empty for default per type."
+          >
+            <Input placeholder="e.g. Submit a request" maxLength={120} />
           </Form.Item>
           <Form.Item noStyle shouldUpdate={(prev, curr) => prev.optionType !== curr.optionType}>
             {({ getFieldValue }) => {

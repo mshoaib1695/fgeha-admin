@@ -20,6 +20,7 @@ type UserRecord = BaseRecord & {
   subSector?: { id: number; name: string; code: string };
   subSectorId?: number;
   approvalStatus: string;
+  accountStatus?: string;
   role: string;
   createdAt: string;
 };
@@ -46,6 +47,7 @@ export const UserList = () => {
 
   const approveMutation = useCustomMutation();
   const rejectMutation = useCustomMutation();
+  const activateMutation = useCustomMutation();
 
   const handleApprove = (id: number) => {
     approveMutation.mutate(
@@ -85,6 +87,25 @@ export const UserList = () => {
     );
   };
 
+  const handleActivate = (id: number) => {
+    activateMutation.mutate(
+      {
+        url: `${API_URL}/users/${id}`,
+        method: "patch",
+        values: { accountStatus: "active" },
+      },
+      {
+        onSuccess: () => {
+          message.success("Account activated");
+          invalidate({ resource: "users", invalidates: ["list"] });
+        },
+        onError: (err: any) => {
+          message.error(err?.message ?? "Failed to activate");
+        },
+      }
+    );
+  };
+
   const pendingList = Array.isArray(pendingData) ? pendingData : [];
   const allTablePropsResolved =
     activeTab === "all"
@@ -115,10 +136,21 @@ export const UserList = () => {
         />
         <Table.Column
           dataIndex="approvalStatus"
-          title="Status"
+          title="Approval"
+          width={100}
           render={(value: string) => (
             <Tag color={value === "approved" ? "green" : value === "rejected" ? "red" : "orange"}>
               {value}
+            </Tag>
+          )}
+        />
+        <Table.Column
+          dataIndex="accountStatus"
+          title="Account"
+          width={100}
+          render={(value: string) => (
+            <Tag color={value === "deactivated" ? "default" : "green"}>
+              {value === "deactivated" ? "Deactivated" : "Active"}
             </Tag>
           )}
         />
@@ -132,7 +164,7 @@ export const UserList = () => {
           title="Actions"
           dataIndex="actions"
           fixed="right"
-          width={220}
+          width={260}
           render={(_, record: UserRecord) => (
             <Space>
               <ShowButton hideText size="small" recordItemId={record.id} />
@@ -164,6 +196,19 @@ export const UserList = () => {
                     Reject
                   </Button>
                 </>
+              )}
+              {(record.accountStatus as string) === "deactivated" && (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleActivate(record.id as number)}
+                  loading={
+                    activateMutation.mutation.isPending &&
+                    activateMutation.mutation.variables?.url === `${API_URL}/users/${record.id}`
+                  }
+                >
+                  Activate
+                </Button>
               )}
               <DeleteButton hideText size="small" recordItemId={record.id} />
             </Space>

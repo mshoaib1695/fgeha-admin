@@ -38,6 +38,8 @@ export const UserShow = () => {
       <TextField value={record?.role} />
       <Title level={5}>Approval status</Title>
       <TextField value={record?.approvalStatus} />
+      <Title level={5}>Account status</Title>
+      <TextField value={record?.accountStatus ?? "active"} />
       {hasAnyIdCard && (
         <>
           <Title level={5} style={{ marginTop: 24 }}>ID card photos</Title>

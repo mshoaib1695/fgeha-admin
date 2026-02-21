@@ -11,6 +11,11 @@ const approvalOptions = [
   { value: "rejected", label: "Rejected" },
 ];
 
+const accountStatusOptions = [
+  { value: "active", label: "Active" },
+  { value: "deactivated", label: "Deactivated" },
+];
+
 const roleOptions = [
   { value: "user", label: "User" },
   { value: "admin", label: "Admin" },
@@ -96,6 +101,9 @@ export const UserEdit = () => {
         </Form.Item>
         <Form.Item label="Approval status" name="approvalStatus">
           <Select options={approvalOptions} style={{ width: 120 }} />
+        </Form.Item>
+        <Form.Item label="Account status" name="accountStatus">
+          <Select options={accountStatusOptions} style={{ width: 140 }} />
         </Form.Item>
         <Form.Item label="Role" name="role">
           <Select options={roleOptions} style={{ width: 120 }} />

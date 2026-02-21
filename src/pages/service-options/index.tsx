@@ -25,6 +25,7 @@ type OptionRecord = {
   } | null;
   displayOrder: number;
   imageUrl?: string | null;
+  headerIcon?: string | null;
   requestNumberPrefix?: string | null;
 };
 
@@ -123,6 +124,7 @@ export const ServiceOptionsPage = () => {
       url: "",
       phoneNumber: "",
       imageUrl: "",
+      headerIcon: "",
       requestNumberPrefix: "",
     });
     setModalOpen(true);
@@ -149,6 +151,7 @@ export const ServiceOptionsPage = () => {
       notificationContent: row.config?.content ?? "",
       url: row.config?.url ?? "",
       imageUrl: row.imageUrl ?? "",
+      headerIcon: row.headerIcon ?? "",
       phoneNumber: row.config?.phoneNumber ?? "",
       requestNumberPrefix: row.requestNumberPrefix ?? "",
     });
@@ -207,6 +210,7 @@ export const ServiceOptionsPage = () => {
       displayOrder: values.displayOrder ?? 0,
       config: undefined as Record<string, unknown> | undefined,
       imageUrl: values.imageUrl?.trim() || null,
+      headerIcon: values.headerIcon?.trim() || null,
       requestNumberPrefix: values.requestNumberPrefix?.trim()?.toUpperCase() || null,
     };
     if (values.optionType === "form") payload.config = { issueImage: values.issueImage ?? "optional" };
@@ -238,6 +242,7 @@ export const ServiceOptionsPage = () => {
             displayOrder: payload.displayOrder,
             config: payload.config ?? null,
             imageUrl: payload.imageUrl,
+            headerIcon: payload.headerIcon,
             requestNumberPrefix: payload.requestNumberPrefix,
           }),
         });
@@ -483,6 +488,13 @@ export const ServiceOptionsPage = () => {
           </Form.Item>
           <Form.Item name="imageUrl" label="Image (shown on app after header)">
             <Input placeholder="Upload below or paste image URL" />
+          </Form.Item>
+          <Form.Item
+            name="headerIcon"
+            label="Header icon"
+            extra="Ionicons name (e.g. list-outline, document-text-outline, water-outline, notifications-outline) or a single emoji (e.g. 📋). Shown in app screen header. Leave empty for default."
+          >
+            <Input placeholder="e.g. list-outline or 📋" maxLength={80} />
           </Form.Item>
           <Form.Item label="Upload image">
             <Upload {...uploadImageProps}>

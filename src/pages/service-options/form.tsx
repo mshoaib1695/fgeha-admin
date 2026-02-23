@@ -526,7 +526,12 @@ export const ServiceOptionFormPage = () => {
                           <Select options={DUPLICATE_PERIOD_OPTIONS} />
                         </Form.Item>
                       </Col>
-                      <Col {...colProps}>
+                    </Row>
+                    <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 16 }}>
+                      If unchecked, users can submit anytime.
+                    </Typography.Text>
+                    <Row>
+                      <Col span={24}>
                         <Form.Item
                           name="restrictionWindowEnabled"
                           valuePropName="checked"
@@ -548,36 +553,36 @@ export const ServiceOptionFormPage = () => {
                         </Form.Item>
                       </Col>
                     </Row>
-                    <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 16 }}>
-                      If unchecked, users can submit anytime.
-                    </Typography.Text>
                     <Form.Item noStyle shouldUpdate={(prev, curr) => prev.restrictionWindowEnabled !== curr.restrictionWindowEnabled}>
                       {() =>
                         form.getFieldValue("restrictionWindowEnabled") ? (
-                          <Row gutter={24}>
-                            <Col xs={24} sm={12} md={8}>
-                              <Form.Item
-                                label="From"
-                                name="restrictionStartTime"
-                                rules={[{ required: true, message: "Required" }]}
-                              >
-                                <Input placeholder="13:00" />
-                              </Form.Item>
+                          <Row gutter={24} align="top">
+                            <Col xs={24} sm={24} md={10}>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+                                <Form.Item
+                                  label="From"
+                                  name="restrictionStartTime"
+                                  rules={[{ required: true, message: "Required" }]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Input size="small" placeholder="13:00" style={{ width: 88 }} />
+                                </Form.Item>
+                                <Form.Item
+                                  label="To"
+                                  name="restrictionEndTime"
+                                  rules={[{ required: true, message: "Required" }]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Input size="small" placeholder="14:00" style={{ width: 88 }} />
+                                </Form.Item>
+                              </div>
                             </Col>
-                            <Col xs={24} sm={12} md={8}>
-                              <Form.Item
-                                label="To"
-                                name="restrictionEndTime"
-                                rules={[{ required: true, message: "Required" }]}
-                              >
-                                <Input placeholder="14:00" />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} md={8}>
+                            <Col xs={24} sm={24} md={14}>
                               <Form.Item
                                 label="Allowed days"
                                 name="restrictionDays"
                                 rules={[{ required: true, message: "Select at least one day" }]}
+                                style={{ marginBottom: 0 }}
                               >
                                 <AllowedDaysField />
                               </Form.Item>

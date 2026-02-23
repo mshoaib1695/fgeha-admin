@@ -9,8 +9,9 @@ import {
   useTable,
 } from "@refinedev/antd";
 import { useInvalidate, useList } from "@refinedev/core";
-import { Table, Tag, Space, Typography, Button, Modal, Form, Select, DatePicker, message } from "antd";
-import { DownloadOutlined } from "@ant-design/icons";
+import { Table, Tag, Space, Typography, Button, Modal, Form, Select, DatePicker, message, Card } from "antd";
+import { DownloadOutlined, FilterOutlined } from "@ant-design/icons";
+import type { TableRowSelection } from "antd/es/table/interface";
 import type { BaseRecord } from "@refinedev/core";
 import type { CrudFilter } from "@refinedev/core";
 import * as XLSX from "xlsx";
@@ -79,6 +80,10 @@ export const RequestList = () => {
   });
   const requestTypes = (requestTypesResult?.data ?? []) as BaseRecord[];
   const serviceOptions = (serviceOptionsResult?.data ?? []) as BaseRecord[];
+  /** Only form-type options for filter and export dropdowns (requests are created from form options). */
+  const formServiceOptions = serviceOptions.filter(
+    (o: BaseRecord) => String((o as { optionType?: string }).optionType ?? "").toLowerCase() === "form",
+  );
   const serviceOptionLabelById = new Map<number, string>(
     serviceOptions
       .map((o) => [Number(o.id), String(o.label ?? "").trim()] as const)
@@ -94,8 +99,19 @@ export const RequestList = () => {
   const [exporting, setExporting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
   const [selectedServiceOptionId, setSelectedServiceOptionId] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [bulkTargetStatus, setBulkTargetStatus] = useState<string | null>(null);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const [form] = Form.useForm();
   const invalidate = useInvalidate();
+
+  const applyFilters = (optionId: number | null, status: string | null) => {
+    const filters: CrudFilter[] = [];
+    if (optionId != null) filters.push({ field: "requestTypeOptionId", operator: "eq", value: optionId });
+    if (status) filters.push({ field: "status", operator: "eq", value: status });
+    setFilters(filters, "replace");
+  };
 
   const dataSource = (tableProps.dataSource ?? []).filter((r: BaseRecord) => {
     if (filterUserId && String(r.userId) !== filterUserId) return false;
@@ -193,6 +209,61 @@ export const RequestList = () => {
     }
   };
 
+  const rowSelection: TableRowSelection<BaseRecord> = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedRowKeys.length === 0) return;
+    const token = localStorage.getItem(TOKEN_KEY);
+    const vToken = getVToken();
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(vToken ? { "X-V": vToken } : {}),
+    };
+    setBulkUpdating(true);
+    let ok = 0;
+    let errCount = 0;
+    for (const key of selectedRowKeys) {
+      const id = Number(key);
+      if (Number.isNaN(id)) continue;
+      try {
+        const res = await fetch(`${API_URL}/requests/${id}/status`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (res.ok) ok += 1;
+        else errCount += 1;
+      } catch {
+        errCount += 1;
+      }
+    }
+    setBulkUpdating(false);
+    setSelectedRowKeys([]);
+    setBulkTargetStatus(null);
+    invalidate({ resource: "requests", invalidates: ["list", "detail"] });
+    if (errCount === 0) message.success(`Status updated for ${ok} request(s).`);
+    else message.warning(`Updated ${ok} request(s); ${errCount} failed.`);
+  };
+
+  const handleBulkStatusConfirm = () => {
+    if (!bulkTargetStatus) {
+      message.warning("Please select a status first.");
+      return;
+    }
+    const label = STATUS_LABELS[bulkTargetStatus] ?? bulkTargetStatus;
+    Modal.confirm({
+      title: "Confirm bulk update",
+      content: `Update ${selectedRowKeys.length} request(s) to "${label}"?`,
+      okText: "Update",
+      cancelText: "Cancel",
+      onOk: () => handleBulkStatusChange(bulkTargetStatus),
+    });
+  };
+
   return (
     <List
       headerButtons={({ defaultButtons }) => (
@@ -236,8 +307,8 @@ export const RequestList = () => {
           <Form.Item name="requestTypeOption" label="Service option">
             <Select
               allowClear
-              placeholder="All service options"
-              options={serviceOptions.map((o) => ({
+              placeholder="All service options (form)"
+              options={formServiceOptions.map((o) => ({
                 value: o.id,
                 label: o.label ?? `Option #${o.id}`,
               }))}
@@ -256,39 +327,94 @@ export const RequestList = () => {
         </Form>
       </Modal>
       {filterUserId && (
-        <Typography.Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+        <Typography.Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
           Filtered by user ID: {filterUserId}
         </Typography.Text>
       )}
-      <Space style={{ marginBottom: 12 }} wrap>
-        <Typography.Text type="secondary">Service option:</Typography.Text>
-        <Select
-          allowClear
-          placeholder="All options"
-          value={selectedServiceOptionId ?? undefined}
-          style={{ minWidth: 260 }}
-          options={serviceOptions.map((o) => ({
-            value: Number(o.id),
-            label: String(o.label ?? `Option #${o.id}`),
-          }))}
-          onChange={(v) => {
-            const optionId = v == null ? null : Number(v);
-            setSelectedServiceOptionId(optionId);
-            if (optionId == null) {
-              setFilters([], "replace");
-              return;
-            }
-            const filters: CrudFilter[] = [
-              { field: "requestTypeOptionId", operator: "eq", value: optionId },
-            ];
-            setFilters(filters, "merge");
+
+      <Card size="small" style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px 24px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 600, marginRight: 8 }}>
+            <FilterOutlined />
+            Filters
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Typography.Text type="secondary" style={{ whiteSpace: "nowrap" }}>Service option</Typography.Text>
+            <Select
+              allowClear
+              placeholder="All options (form)"
+              value={selectedServiceOptionId ?? undefined}
+              style={{ width: 220 }}
+              options={formServiceOptions.map((o) => ({
+                value: Number(o.id),
+                label: String(o.label ?? `Option #${o.id}`),
+              }))}
+              onChange={(v) => {
+                const optionId = v == null ? null : Number(v);
+                setSelectedServiceOptionId(optionId);
+                applyFilters(optionId, selectedStatus);
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Typography.Text type="secondary" style={{ whiteSpace: "nowrap" }}>Status</Typography.Text>
+            <Select
+              allowClear
+              placeholder="All statuses"
+              value={selectedStatus ?? undefined}
+              style={{ width: 130 }}
+              options={STATUS_OPTIONS}
+              onChange={(v) => {
+                const status = v == null ? null : String(v);
+                setSelectedStatus(status);
+                applyFilters(selectedServiceOptionId, status);
+              }}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {selectedRowKeys.length > 0 && (
+        <Card
+          size="small"
+          style={{
+            marginBottom: 20,
+            padding: "12px 16px",
+            background: "var(--ant-color-primary-bg)",
+            borderColor: "var(--ant-color-primary-border)",
           }}
-        />
-      </Space>
+        >
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px 20px" }}>
+            <Typography.Text strong style={{ marginRight: 4 }}>
+              {selectedRowKeys.length} selected
+            </Typography.Text>
+            <Select
+              size="small"
+              placeholder="New status…"
+              value={bulkTargetStatus}
+              onChange={(v) => setBulkTargetStatus(v ?? null)}
+              style={{ width: 140 }}
+              options={STATUS_OPTIONS}
+              disabled={bulkUpdating}
+            />
+            <Button
+              type="primary"
+              size="small"
+              loading={bulkUpdating}
+              disabled={!bulkTargetStatus || bulkUpdating}
+              onClick={handleBulkStatusConfirm}
+            >
+              Update status
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <Table
         {...tableProps}
         dataSource={dataSource}
         rowKey="id"
+        rowSelection={rowSelection}
         scroll={{ x: 1480 }}
       >
         <Table.Column dataIndex="id" title="ID" width={70} responsive={["md"]} />
@@ -345,6 +471,16 @@ export const RequestList = () => {
               {STATUS_LABELS[value] ?? value}
             </Tag>
           )}
+        />
+        <Table.Column
+          title="Customer cancel reason"
+          width={200}
+          responsive={["lg"]}
+          ellipsis={{ showTitle: true }}
+          render={(_, record: BaseRecord) => {
+            if (record?.status !== "cancelled" || !record?.customerCancellationReason) return "—";
+            return record.customerCancellationReason;
+          }}
         />
         <Table.Column
           dataIndex={["createdAt"]}

@@ -130,6 +130,14 @@ export const RequestShow = () => {
                   Update
                 </Button>
               </Space>
+              {record?.status === "cancelled" && record?.customerCancellationReason && (
+                <div>
+                  <Title level={5} style={{ marginBottom: 4 }}>Customer cancellation reason</Title>
+                  <Typography.Text type="secondary" style={{ display: "block", whiteSpace: "pre-wrap" }}>
+                    {record.customerCancellationReason}
+                  </Typography.Text>
+                </div>
+              )}
               <div>
                 <Title level={5} style={{ marginBottom: 4 }}>Created at</Title>
                 <DateField value={record?.createdAt} />

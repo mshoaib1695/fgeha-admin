@@ -53,6 +53,7 @@ import {
 import { UsersWithRequestsPage } from "./pages/users-with-requests";
 import { DailyBulletinList } from "./pages/daily-bulletin";
 import { ServiceOptionsPage } from "./pages/service-options";
+import { ServiceOptionFormPage } from "./pages/service-options/form";
 import { ReportsPage } from "./pages/reports";
 import {
   SubSectorList,
@@ -133,11 +134,6 @@ function App() {
                     meta: { label: "Request types", icon: <AppstoreOutlined /> },
                   },
                   {
-                    name: "reports",
-                    list: "/reports",
-                    meta: { label: "Reports", icon: <BarChartOutlined /> },
-                  },
-                  {
                     name: "requests",
                     list: "/requests",
                     edit: "/requests/edit/:id",
@@ -164,6 +160,8 @@ function App() {
                   {
                     name: "service-options",
                     list: "/service-options",
+                    create: "/service-options/create",
+                    edit: "/service-options/edit/:id",
                     meta: { label: "Service options", icon: <SettingOutlined /> },
                   },
                   {
@@ -172,6 +170,11 @@ function App() {
                     create: "/sub-sectors/create",
                     edit: "/sub-sectors/edit/:id",
                     meta: { label: "Sub-sectors", icon: <TeamOutlined /> },
+                  },
+                  {
+                    name: "reports",
+                    list: "/reports",
+                    meta: { label: "Reports", icon: <BarChartOutlined /> },
                   },
                 ]}
                 options={{
@@ -219,7 +222,11 @@ function App() {
                       <Route path="show/:id" element={<UserShow />} />
                     </Route>
                     <Route path="/daily-bulletin" element={<DailyBulletinList />} />
-                    <Route path="/service-options" element={<ServiceOptionsPage />} />
+                    <Route path="/service-options">
+                      <Route index element={<ServiceOptionsPage />} />
+                      <Route path="create" element={<ServiceOptionFormPage />} />
+                      <Route path="edit/:id" element={<ServiceOptionFormPage />} />
+                    </Route>
                     <Route path="/sub-sectors">
                       <Route index element={<SubSectorList />} />
                       <Route path="create" element={<SubSectorCreate />} />

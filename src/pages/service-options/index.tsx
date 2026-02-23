@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, Select, Table, Button, Space, message, Modal, Form, Input, InputNumber, Upload } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, MinusCircleOutlined, PictureOutlined } from "@ant-design/icons";
-import type { UploadProps } from "antd";
+import { Link } from "react-router";
+import { Card, Select, Table, Button, Space, message } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
@@ -28,16 +28,12 @@ type OptionRecord = {
   headerIcon?: string | null;
   hint?: string | null;
   requestNumberPrefix?: string | null;
+  duplicateRestrictionPeriod?: string | null;
+  restrictionStartTime?: string | null;
+  restrictionEndTime?: string | null;
+  restrictionDays?: string | null;
 };
 
-const OPTION_TYPES: { value: OptionType; label: string }[] = [
-  { value: "form", label: "Form (create request)" },
-  { value: "list", label: "List (e.g. tanker list, requests)" },
-  { value: "rules", label: "Rules (static content)" },
-  { value: "notification", label: "Notification (single content block)" },
-  { value: "link", label: "Link (URL)" },
-  { value: "phone", label: "Phone (tap to call)" },
-];
 const LIST_KEYS = [
   { value: "daily_bulletin", label: "Water tanker list (daily bulletin)" },
   { value: "requests", label: "List of requests (this type)" },
@@ -59,11 +55,7 @@ export const ServiceOptionsPage = () => {
   const [options, setOptions] = useState<OptionRecord[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [loadingOptions, setLoadingOptions] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [form] = Form.useForm();
 
   const loadRequestTypes = useCallback(async () => {
     setLoadingTypes(true);
@@ -111,168 +103,8 @@ export const ServiceOptionsPage = () => {
     loadOptions();
   }, [loadOptions]);
 
-  const openCreate = () => {
-    setEditingId(null);
-    form.setFieldsValue({
-      label: "",
-      slug: "",
-      optionType: "form",
-      displayOrder: options.length,
-      issueImage: "optional",
-      listKey: undefined,
-      rules: [{ description: "" }],
-      notificationContent: "",
-      url: "",
-      phoneNumber: "",
-      imageUrl: "",
-      headerIcon: "",
-      hint: "",
-      requestNumberPrefix: "",
-    });
-    setModalOpen(true);
-  };
-
-  const openEdit = (row: OptionRecord) => {
-    setEditingId(row.id);
-    const cfg = row.config;
-    let rules: RuleItem[] = [];
-    if (cfg?.rules && Array.isArray(cfg.rules) && cfg.rules.length > 0) {
-      rules = cfg.rules.map((r) => ({ description: r.description ?? "" }));
-    } else if (cfg?.content) {
-      rules = [{ description: String(cfg.content) }];
-    }
-    if (rules.length === 0) rules = [{ description: "" }];
-    form.setFieldsValue({
-      label: row.label,
-      slug: row.slug ?? "",
-      optionType: row.optionType,
-      displayOrder: row.displayOrder,
-      issueImage: row.config?.issueImage ?? "optional",
-      listKey: row.config?.listKey,
-      rules,
-      notificationContent: row.config?.content ?? "",
-      url: row.config?.url ?? "",
-      imageUrl: row.imageUrl ?? "",
-      headerIcon: row.headerIcon ?? "",
-      hint: row.hint ?? "",
-      phoneNumber: row.config?.phoneNumber ?? "",
-      requestNumberPrefix: row.requestNumberPrefix ?? "",
-    });
-    setModalOpen(true);
-  };
-
-  const uploadImageProps: UploadProps = {
-    name: "file",
-    maxCount: 1,
-    showUploadList: false,
-    customRequest: async ({ file, onSuccess, onError }) => {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const vToken = getVToken();
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      if (vToken) headers["X-V"] = vToken;
-      const formData = new FormData();
-      formData.append("file", file as File);
-      try {
-        const res = await fetch(`${API_URL}/request-type-options/upload-image`, {
-          method: "POST",
-          headers,
-          body: formData,
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as { message?: string }).message ?? "Upload failed");
-        }
-        const { url } = await res.json();
-        form.setFieldValue("imageUrl", url);
-        message.success("Image uploaded.");
-        onSuccess?.(url);
-      } catch (e) {
-        message.error((e as Error).message ?? "Upload failed");
-        onError?.(e as Error);
-      }
-    },
-  };
-
-  const handleSubmit = async () => {
-    try {
-      await form.validateFields();
-    } catch {
-      return;
-    }
-    const values = form.getFieldsValue();
-    if (selectedTypeId == null) {
-      message.error("Select a request type first.");
-      return;
-    }
-    const payload = {
-      requestTypeId: selectedTypeId,
-      label: values.label?.trim(),
-      slug: values.slug?.trim() || null,
-      optionType: values.optionType,
-      displayOrder: values.displayOrder ?? 0,
-      config: undefined as Record<string, unknown> | undefined,
-      imageUrl: values.imageUrl?.trim() || null,
-      headerIcon: values.headerIcon?.trim() || null,
-      hint: values.hint?.trim() || null,
-      requestNumberPrefix: values.requestNumberPrefix?.trim()?.toUpperCase() || null,
-    };
-    if (values.optionType === "form") payload.config = { issueImage: values.issueImage ?? "optional" };
-    if (values.optionType === "list") payload.config = { listKey: values.listKey };
-    if (values.optionType === "rules") {
-      const rulesList = Array.isArray(values.rules) ? values.rules : [];
-      payload.config = {
-        rules: rulesList
-          .map((r: RuleItem) => ({ description: (r.description ?? "").trim() }))
-          .filter((r: RuleItem) => r.description),
-      };
-    }
-    if (values.optionType === "notification") {
-      payload.config = { content: String(values.notificationContent ?? "").trim() };
-    }
-    if (values.optionType === "link") payload.config = { url: values.url ?? "" };
-    if (values.optionType === "phone") payload.config = { phoneNumber: values.phoneNumber ?? "" };
-
-    setSaving(true);
-    try {
-      if (editingId != null) {
-        const res = await fetch(`${API_URL}/request-type-options/${editingId}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            label: payload.label,
-            optionType: payload.optionType,
-            slug: payload.slug,
-            displayOrder: payload.displayOrder,
-            config: payload.config ?? null,
-            imageUrl: payload.imageUrl,
-            headerIcon: payload.headerIcon,
-            hint: payload.hint,
-            requestNumberPrefix: payload.requestNumberPrefix,
-          }),
-        });
-        if (!res.ok) throw new Error("Update failed");
-        message.success("Option updated.");
-      } else {
-        const res = await fetch(`${API_URL}/request-type-options`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error("Create failed");
-        message.success("Option added.");
-      }
-      setModalOpen(false);
-      loadOptions();
-    } catch (e) {
-      message.error((e as Error).message ?? "Failed to save.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDelete = async (id: number) => {
-    const confirmed = window.confirm("Delete option?");
+    const confirmed = window.confirm("Delete this option?");
     if (!confirmed) return;
     setDeletingId(id);
     try {
@@ -306,8 +138,7 @@ export const ServiceOptionsPage = () => {
           return LIST_KEYS.find((k) => k.value === row.config?.listKey)?.label ?? row.config.listKey;
         if (row.optionType === "rules") {
           const rules = row.config?.rules;
-          if (Array.isArray(rules) && rules.length > 0)
-            return `${rules.length} rule(s)`;
+          if (Array.isArray(rules) && rules.length > 0) return `${rules.length} rule(s)`;
           if (row.config?.content)
             return (row.config.content as string).slice(0, 40) + (row.config.content.length > 40 ? "…" : "");
         }
@@ -324,10 +155,14 @@ export const ServiceOptionsPage = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 120,
+      width: 140,
       render: (_: unknown, row: OptionRecord) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
+          <Link to={`/service-options/edit/${row.id}`}>
+            <Button type="link" size="small" icon={<EditOutlined />}>
+              Edit
+            </Button>
+          </Link>
           <Button
             type="link"
             size="small"
@@ -339,7 +174,9 @@ export const ServiceOptionsPage = () => {
               e.stopPropagation();
               void handleDelete(row.id);
             }}
-          />
+          >
+            Delete
+          </Button>
         </Space>
       ),
     },
@@ -348,7 +185,7 @@ export const ServiceOptionsPage = () => {
   return (
     <Card title="Service options (per request type)">
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
-        <Space wrap>
+        <Space wrap align="center">
           <span>Request type:</span>
           <Select
             loading={loadingTypes}
@@ -358,12 +195,18 @@ export const ServiceOptionsPage = () => {
             options={requestTypes.map((t) => ({ value: t.id, label: `${t.name} (${t.slug})` }))}
             placeholder="Select request type"
           />
+          {selectedTypeId != null ? (
+            <Link to={`/service-options/create?requestTypeId=${selectedTypeId}`}>
+              <Button type="primary" icon={<PlusOutlined />}>
+                Add option
+              </Button>
+            </Link>
+          ) : (
+            <Button type="primary" icon={<PlusOutlined />} disabled>
+              Add option
+            </Button>
+          )}
         </Space>
-        <div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={selectedTypeId == null}>
-            Add option
-          </Button>
-        </div>
         <Table
           rowKey="id"
           loading={loadingOptions}
@@ -373,148 +216,6 @@ export const ServiceOptionsPage = () => {
           size="small"
         />
       </Space>
-
-      <Modal
-        title={editingId != null ? "Edit option" : "Add option"}
-        open={modalOpen}
-        onOk={handleSubmit}
-        onCancel={() => setModalOpen(false)}
-        confirmLoading={saving}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="label" label="Label" rules={[{ required: true }]}>
-            <Input placeholder="e.g. Order Water Tanker" />
-          </Form.Item>
-          <Form.Item
-            name="slug"
-            label="Slug (optional)"
-            extra="Used in analytics/report filters. Auto-generated from label if empty."
-          >
-            <Input placeholder="e.g. order_water_tanker" maxLength={120} />
-          </Form.Item>
-          <Form.Item name="optionType" label="Type" rules={[{ required: true }]}>
-            <Select options={OPTION_TYPES} />
-          </Form.Item>
-          <Form.Item
-            name="hint"
-            label="Hint (text under option in app)"
-            extra="e.g. Submit a request, Open list, View rules. Shown under the option label. Leave empty for default per type."
-          >
-            <Input placeholder="e.g. Submit a request" maxLength={120} />
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.optionType !== curr.optionType}>
-            {({ getFieldValue }) => {
-              const type = getFieldValue("optionType");
-              if (type === "list")
-                return (
-                  <Form.Item name="listKey" label="List" rules={[{ required: true }]}>
-                    <Select options={LIST_KEYS} placeholder="Select list type" />
-                  </Form.Item>
-                );
-              if (type === "form")
-                return (
-                  <Form.Item name="issueImage" label="Photo upload in request form" initialValue="optional">
-                    <Select
-                      options={[
-                        { value: "none", label: "Hidden" },
-                        { value: "optional", label: "Optional" },
-                        { value: "required", label: "Required" },
-                      ]}
-                    />
-                  </Form.Item>
-                );
-              if (type === "rules")
-                return (
-                  <Form.Item label="Rules (list of rule text)">
-                    <Form.List name="rules">
-                      {(fields, { add, remove }) => (
-                        <>
-                          {fields.map(({ key, name, ...rest }) => (
-                            <Card size="small" key={key} style={{ marginBottom: 12 }}>
-                              <Space direction="vertical" style={{ width: "100%" }}>
-                                <Form.Item {...rest} name={[name, "description"]} label="Rule">
-                                  <Input.TextArea rows={3} placeholder="Rule text" />
-                                </Form.Item>
-                                <Button type="link" danger size="small" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
-                                  Remove rule
-                                </Button>
-                              </Space>
-                            </Card>
-                          ))}
-                          <Button type="dashed" onClick={() => add({ description: "" })} block>
-                            + Add rule
-                          </Button>
-                        </>
-                      )}
-                    </Form.List>
-                  </Form.Item>
-                );
-              if (type === "notification")
-                return (
-                  <Form.Item
-                    name="notificationContent"
-                    label="Notification content"
-                    rules={[{ required: true, message: "Please enter notification content" }]}
-                  >
-                    <Input.TextArea rows={4} placeholder="Notification text shown in app" />
-                  </Form.Item>
-                );
-              if (type === "link")
-                return (
-                  <Form.Item name="url" label="URL">
-                    <Input placeholder="https://..." />
-                  </Form.Item>
-                );
-              if (type === "phone")
-                return (
-                  <Form.Item
-                    name="phoneNumber"
-                    label="Phone / mobile number"
-                    rules={[{ required: true, message: "Please enter phone number" }]}
-                  >
-                    <Input placeholder="+92 300 1234567" />
-                  </Form.Item>
-                );
-              return null;
-            }}
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.optionType !== curr.optionType}>
-            {({ getFieldValue }) => {
-              const type = getFieldValue("optionType");
-              if (type !== "form") return null;
-              return (
-                <Form.Item
-                  name="requestNumberPrefix"
-                  label="Request ID prefix"
-                  rules={[{ required: true, message: "Prefix is required for form option" }]}
-                  extra='Example: "OWT" creates OWT#0001'
-                >
-                  <Input maxLength={20} placeholder="e.g. OWT" />
-                </Form.Item>
-              );
-            }}
-          </Form.Item>
-          <Form.Item name="displayOrder" label="Display order">
-            <InputNumber min={0} style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item name="imageUrl" label="Image (shown on app after header)">
-            <Input placeholder="Upload below or paste image URL" />
-          </Form.Item>
-          <Form.Item
-            name="headerIcon"
-            label="Header icon"
-            extra="Ionicons name (e.g. list-outline, document-text-outline, water-outline, notifications-outline) or a single emoji (e.g. 📋). Shown in app screen header. Leave empty for default."
-          >
-            <Input placeholder="e.g. list-outline or 📋" maxLength={80} />
-          </Form.Item>
-          <Form.Item label="Upload image">
-            <Upload {...uploadImageProps}>
-              <Button icon={<PictureOutlined />}>Select image (PNG, JPEG, WebP, GIF, max 2MB)</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
     </Card>
   );
 };

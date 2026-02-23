@@ -1,20 +1,11 @@
 import { useState, useEffect } from "react";
 import { Edit, useForm } from "@refinedev/antd";
-import { Form, Input, InputNumber, Checkbox, Select, Upload, message, Card } from "antd";
+import { Form, Input, InputNumber, Checkbox, Upload, message, Card } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
-import { AllowedDaysField } from "./AllowedDaysField";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
-const duplicatePeriodOptions = [
-  { value: "none", label: "None" },
-  { value: "day", label: "Once per calendar day" },
-  { value: "week", label: "Once per calendar week" },
-  { value: "month", label: "Once per calendar month" },
-];
-
 export const RequestTypeEdit = () => {
-  const [windowEnabled, setWindowEnabled] = useState(false);
   const [underConstructionEnabled, setUnderConstructionEnabled] = useState(false);
   const [iconUploading, setIconUploading] = useState(false);
   const { formProps, saveButtonProps } = useForm({
@@ -56,9 +47,6 @@ export const RequestTypeEdit = () => {
   useEffect(() => {
     const v = formProps.initialValues as Record<string, unknown> | undefined;
     if (!v) return;
-    if (v.restrictionStartTime || v.restrictionEndTime || v.restrictionDays) {
-      setWindowEnabled(true);
-    }
     const underConstruction = v.underConstruction ?? v.under_construction;
     if (underConstruction === true || underConstruction === 1) {
       setUnderConstructionEnabled(true);
@@ -66,9 +54,7 @@ export const RequestTypeEdit = () => {
   }, [formProps.initialValues]);
 
   const handleFinish = (values: Record<string, unknown>) => {
-    let next = !windowEnabled
-      ? { ...values, restrictionStartTime: null, restrictionEndTime: null, restrictionDays: null }
-      : values;
+    let next = values;
     if (!underConstructionEnabled) {
       next = { ...next, underConstruction: false, underConstructionMessage: null };
     } else {
@@ -144,52 +130,6 @@ export const RequestTypeEdit = () => {
             <p className="ant-upload-text">Click or drag SVG/image here (max 1024KB)</p>
           </Upload.Dragger>
         </Form.Item>
-        <Form.Item
-          name="duplicateRestrictionPeriod"
-          label="Duplicate request restriction"
-          extra="Limit to one request per calendar day / week / month (same house, street and sector)"
-        >
-          <Select options={duplicatePeriodOptions} style={{ width: 220 }} />
-        </Form.Item>
-        <Form.Item>
-          <Checkbox
-            checked={windowEnabled}
-            onChange={(e) => setWindowEnabled(e.target.checked)}
-          >
-            Set request open window (limit when users can submit)
-          </Checkbox>
-          <div style={{ color: "rgba(0,0,0,0.45)", fontSize: 12, marginTop: 4 }}>
-            By default, users can submit anytime. Check to allow only in a time window.
-          </div>
-        </Form.Item>
-        {windowEnabled && (
-          <>
-            <Form.Item
-              label="Window start time"
-              name="restrictionStartTime"
-              rules={[{ required: true, message: "Required when window is set" }]}
-              extra="e.g. 13:00"
-            >
-              <Input placeholder="13:00" style={{ width: 100 }} />
-            </Form.Item>
-            <Form.Item
-              label="Window end time"
-              name="restrictionEndTime"
-              rules={[{ required: true, message: "Required when window is set" }]}
-              extra="e.g. 14:00"
-            >
-              <Input placeholder="14:00" style={{ width: 100 }} />
-            </Form.Item>
-            <Form.Item
-              label="Allowed days"
-              name="restrictionDays"
-              rules={[{ required: true, message: "Select at least one day" }]}
-              extra="Pick days when users can submit, or use presets"
-            >
-              <AllowedDaysField />
-            </Form.Item>
-          </>
-        )}
       </Form>
     </Edit>
   );

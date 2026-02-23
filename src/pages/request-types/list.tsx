@@ -21,28 +21,6 @@ export const RequestTypeList = () => {
         <Table.Column dataIndex="slug" title="Slug" />
         <Table.Column dataIndex="displayOrder" title="Order" width={80} />
         <Table.Column
-          title="Open window"
-          key="restriction"
-          width={220}
-          render={(_, record: { restrictionStartTime?: string; restrictionEndTime?: string; restrictionDays?: string }) => {
-            if (!record.restrictionStartTime || !record.restrictionEndTime || !record.restrictionDays)
-              return "Any time";
-            const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-            const days = record.restrictionDays
-              .split(",")
-              .map((d) => dayNames[parseInt(d.trim(), 10)])
-              .filter(Boolean)
-              .join(", ");
-            return `${record.restrictionStartTime}–${record.restrictionEndTime} (${days})`;
-          }}
-        />
-        <Table.Column
-          title="Duplicate limit"
-          dataIndex="duplicateRestrictionPeriod"
-          width={120}
-          render={(v: string) => (v && v !== "none" ? `1 per calendar ${v}` : "—")}
-        />
-        <Table.Column
           title="Actions"
           dataIndex="actions"
           width={150}

@@ -26,7 +26,7 @@ type UserRecord = BaseRecord & {
 };
 
 export const UserList = () => {
-  const [activeTab, setActiveTab] = useState<"all" | "pending">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "deactivated">("all");
   const invalidate = useInvalidate();
 
   const { tableProps: allTableProps } = useTable({
@@ -44,6 +44,16 @@ export const UserList = () => {
   });
   const pendingData = pendingResult?.data;
   const pendingLoading = pendingQuery?.isLoading;
+
+  const { result: deactivatedResult, query: deactivatedQuery } = useCustom<{
+    data: UserRecord[];
+  }>({
+    url: `${API_URL}/users/deactivated`,
+    method: "get",
+    queryOptions: { enabled: activeTab === "deactivated" },
+  });
+  const deactivatedData = deactivatedResult?.data;
+  const deactivatedLoading = deactivatedQuery?.isLoading;
 
   const approveMutation = useCustomMutation();
   const rejectMutation = useCustomMutation();
@@ -107,19 +117,23 @@ export const UserList = () => {
   };
 
   const pendingList = Array.isArray(pendingData) ? pendingData : [];
+  const deactivatedList = Array.isArray(deactivatedData) ? deactivatedData : [];
   const allTablePropsResolved =
     activeTab === "all"
       ? allTableProps
-      : { dataSource: pendingList, total: pendingList.length, loading: pendingLoading };
+      : activeTab === "pending"
+        ? { dataSource: pendingList, total: pendingList.length, loading: pendingLoading }
+        : { dataSource: deactivatedList, total: deactivatedList.length, loading: deactivatedLoading };
 
   return (
     <List>
       <Tabs
         activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as "all" | "pending")}
+        onChange={(k) => setActiveTab(k as "all" | "pending" | "deactivated")}
         items={[
           { key: "all", label: "All users" },
           { key: "pending", label: "Pending approval" },
+          { key: "deactivated", label: "Deactivated accounts" },
         ]}
       />
       <Table {...allTablePropsResolved} rowKey="id" style={{ marginTop: 16 }}>

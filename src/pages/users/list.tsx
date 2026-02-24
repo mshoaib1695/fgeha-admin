@@ -8,7 +8,7 @@ import {
   useTable,
 } from "@refinedev/antd";
 import { useCustom, useCustomMutation, useInvalidate } from "@refinedev/core";
-import { Space, Table, Tag, Button, Tabs, message } from "antd";
+import { Space, Table, Tag, Button, Tabs, message, Input } from "antd";
 import type { BaseRecord } from "@refinedev/core";
 import { API_URL } from "../../providers/constants";
 
@@ -27,28 +27,36 @@ type UserRecord = BaseRecord & {
 
 export const UserList = () => {
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "deactivated">("all");
+  const [searchText, setSearchText] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const invalidate = useInvalidate();
 
   const { tableProps: allTableProps } = useTable({
     resource: "users",
     syncWithLocation: false,
     queryOptions: { enabled: activeTab === "all" },
+    filters: {
+      initial: [],
+      permanent: searchText ? [{ field: "q", operator: "eq", value: searchText }] : [],
+    },
   });
 
+  const pendingUrl = `${API_URL}/users/pending${searchText ? `?q=${encodeURIComponent(searchText)}` : ""}`;
   const { result: pendingResult, query: pendingQuery } = useCustom<{
     data: UserRecord[];
   }>({
-    url: `${API_URL}/users/pending`,
+    url: pendingUrl,
     method: "get",
     queryOptions: { enabled: activeTab === "pending" },
   });
   const pendingData = pendingResult?.data;
   const pendingLoading = pendingQuery?.isLoading;
 
+  const deactivatedUrl = `${API_URL}/users/deactivated${searchText ? `?q=${encodeURIComponent(searchText)}` : ""}`;
   const { result: deactivatedResult, query: deactivatedQuery } = useCustom<{
     data: UserRecord[];
   }>({
-    url: `${API_URL}/users/deactivated`,
+    url: deactivatedUrl,
     method: "get",
     queryOptions: { enabled: activeTab === "deactivated" },
   });
@@ -127,16 +135,29 @@ export const UserList = () => {
 
   return (
     <List>
-      <Tabs
-        activeKey={activeTab}
-        onChange={(k) => setActiveTab(k as "all" | "pending" | "deactivated")}
-        items={[
-          { key: "all", label: "All users" },
-          { key: "pending", label: "Pending approval" },
-          { key: "deactivated", label: "Deactivated accounts" },
-        ]}
-      />
-      <Table {...allTablePropsResolved} rowKey="id" style={{ marginTop: 16 }}>
+      <Space direction="vertical" style={{ width: "100%", marginBottom: 16 }} size="middle">
+        <Space wrap>
+          <Input.Search
+            placeholder="Search by email, name, house no, street no..."
+            allowClear
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onSearch={(value) => setSearchText(value.trim())}
+            style={{ minWidth: 280 }}
+            enterButton="Search"
+          />
+        </Space>
+        <Tabs
+          activeKey={activeTab}
+          onChange={(k) => setActiveTab(k as "all" | "pending" | "deactivated")}
+          items={[
+            { key: "all", label: "All users" },
+            { key: "pending", label: "Pending approval" },
+            { key: "deactivated", label: "Deactivated accounts" },
+          ]}
+        />
+      </Space>
+      <Table {...allTablePropsResolved} rowKey="id" style={{ marginTop: 0 }}>
         <Table.Column dataIndex="id" title="ID" width={70} />
         <Table.Column dataIndex="email" title="Email" />
         <Table.Column dataIndex="fullName" title="Full name" />

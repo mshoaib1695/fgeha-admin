@@ -212,10 +212,11 @@ export const RequestList = () => {
   const rowSelection: TableRowSelection<BaseRecord> = {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
+    preserveSelectedRowKeys: true,
   };
 
-  const handleBulkStatusChange = async (newStatus: string) => {
-    if (selectedRowKeys.length === 0) return;
+  const handleBulkStatusChange = async (newStatus: string, keysToUpdate: React.Key[]) => {
+    if (keysToUpdate.length === 0) return;
     const token = localStorage.getItem(TOKEN_KEY);
     const vToken = getVToken();
     const headers: HeadersInit = {
@@ -226,9 +227,9 @@ export const RequestList = () => {
     setBulkUpdating(true);
     let ok = 0;
     let errCount = 0;
-    for (const key of selectedRowKeys) {
-      const id = Number(key);
-      if (Number.isNaN(id)) continue;
+    for (const key of keysToUpdate) {
+      const id = typeof key === "string" ? parseInt(key, 10) : Number(key);
+      if (!Number.isFinite(id)) continue;
       try {
         const res = await fetch(`${API_URL}/requests/${id}/status`, {
           method: "PATCH",
@@ -254,13 +255,18 @@ export const RequestList = () => {
       message.warning("Please select a status first.");
       return;
     }
+    if (selectedRowKeys.length === 0) {
+      message.warning("No requests selected.");
+      return;
+    }
+    const keysToUpdate = [...selectedRowKeys];
     const label = STATUS_LABELS[bulkTargetStatus] ?? bulkTargetStatus;
     Modal.confirm({
       title: "Confirm bulk update",
-      content: `Update ${selectedRowKeys.length} request(s) to "${label}"?`,
+      content: `Update ${keysToUpdate.length} request(s) to "${label}"?`,
       okText: "Update",
       cancelText: "Cancel",
-      onOk: () => handleBulkStatusChange(bulkTargetStatus),
+      onOk: () => handleBulkStatusChange(bulkTargetStatus, keysToUpdate),
     });
   };
 

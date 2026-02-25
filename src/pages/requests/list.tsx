@@ -103,6 +103,7 @@ export const RequestList = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [form] = Form.useForm();
   const invalidate = useInvalidate();
 
@@ -217,6 +218,10 @@ export const RequestList = () => {
 
   const handleBulkStatusChange = async (newStatus: string, keysToUpdate: React.Key[]) => {
     if (keysToUpdate.length === 0) return;
+    if (!API_URL) {
+      message.error("API URL is not configured.");
+      return;
+    }
     const token = localStorage.getItem(TOKEN_KEY);
     const vToken = getVToken();
     const headers: HeadersInit = {
@@ -259,15 +264,14 @@ export const RequestList = () => {
       message.warning("No requests selected.");
       return;
     }
+    setBulkConfirmOpen(true);
+  };
+
+  const handleBulkConfirmOk = async () => {
+    if (!bulkTargetStatus || selectedRowKeys.length === 0) return;
     const keysToUpdate = [...selectedRowKeys];
-    const label = STATUS_LABELS[bulkTargetStatus] ?? bulkTargetStatus;
-    Modal.confirm({
-      title: "Confirm bulk update",
-      content: `Update ${keysToUpdate.length} request(s) to "${label}"?`,
-      okText: "Update",
-      cancelText: "Cancel",
-      onOk: () => handleBulkStatusChange(bulkTargetStatus, keysToUpdate),
-    });
+    await handleBulkStatusChange(bulkTargetStatus, keysToUpdate);
+    setBulkConfirmOpen(false);
   };
 
   return (
@@ -405,6 +409,7 @@ export const RequestList = () => {
             />
             <Button
               type="primary"
+              htmlType="button"
               size="small"
               loading={bulkUpdating}
               disabled={!bulkTargetStatus || bulkUpdating}
@@ -415,6 +420,22 @@ export const RequestList = () => {
           </div>
         </Card>
       )}
+
+      <Modal
+        title="Confirm bulk update"
+        open={bulkConfirmOpen}
+        onCancel={() => setBulkConfirmOpen(false)}
+        onOk={handleBulkConfirmOk}
+        okText="Update"
+        cancelText="Cancel"
+        confirmLoading={bulkUpdating}
+      >
+        {bulkTargetStatus && selectedRowKeys.length > 0 && (
+          <p>
+            Update {selectedRowKeys.length} request(s) to "{STATUS_LABELS[bulkTargetStatus] ?? bulkTargetStatus}"?
+          </p>
+        )}
+      </Modal>
 
       <Table
         {...tableProps}

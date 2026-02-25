@@ -229,7 +229,7 @@ export const UserList = () => {
           dataIndex="emailVerified"
           title="Email"
           width={90}
-          render={(value: boolean, record: UserRecord) =>
+          render={(_, record: UserRecord) =>
             record?.emailVerified === false ? (
               <Tag color="orange">Unverified</Tag>
             ) : (

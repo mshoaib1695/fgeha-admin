@@ -22,11 +22,12 @@ type UserRecord = BaseRecord & {
   approvalStatus: string;
   accountStatus?: string;
   role: string;
+  emailVerified?: boolean;
   createdAt: string;
 };
 
 export const UserList = () => {
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "deactivated">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "unverified" | "deactivated">("all");
   const [searchText, setSearchText] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const invalidate = useInvalidate();
@@ -52,6 +53,17 @@ export const UserList = () => {
   const pendingData = pendingResult?.data;
   const pendingLoading = pendingQuery?.isLoading;
 
+  const unverifiedUrl = `${API_URL}/users/unverified-email${searchText ? `?q=${encodeURIComponent(searchText)}` : ""}`;
+  const { result: unverifiedResult, query: unverifiedQuery } = useCustom<{
+    data: UserRecord[];
+  }>({
+    url: unverifiedUrl,
+    method: "get",
+    queryOptions: { enabled: activeTab === "unverified" },
+  });
+  const unverifiedData = Array.isArray(unverifiedResult) ? unverifiedResult : unverifiedResult?.data;
+  const unverifiedLoading = unverifiedQuery?.isLoading;
+
   const deactivatedUrl = `${API_URL}/users/deactivated${searchText ? `?q=${encodeURIComponent(searchText)}` : ""}`;
   const { result: deactivatedResult, query: deactivatedQuery } = useCustom<{
     data: UserRecord[];
@@ -66,6 +78,7 @@ export const UserList = () => {
   const approveMutation = useCustomMutation();
   const rejectMutation = useCustomMutation();
   const activateMutation = useCustomMutation();
+  const verifyEmailMutation = useCustomMutation();
 
   const handleApprove = (id: number) => {
     approveMutation.mutate(
@@ -124,14 +137,36 @@ export const UserList = () => {
     );
   };
 
+  const handleVerifyEmail = (id: number) => {
+    verifyEmailMutation.mutate(
+      {
+        url: `${API_URL}/users/${id}/verify-email`,
+        method: "patch",
+        values: {},
+      },
+      {
+        onSuccess: () => {
+          message.success("Email verified");
+          invalidate({ resource: "users", invalidates: ["list"] });
+        },
+        onError: (err: any) => {
+          message.error(err?.message ?? "Failed to verify email");
+        },
+      }
+    );
+  };
+
   const pendingList = Array.isArray(pendingData) ? pendingData : [];
+  const unverifiedList = Array.isArray(unverifiedData) ? unverifiedData : [];
   const deactivatedList = Array.isArray(deactivatedData) ? deactivatedData : [];
   const allTablePropsResolved =
     activeTab === "all"
       ? allTableProps
       : activeTab === "pending"
         ? { dataSource: pendingList, total: pendingList.length, loading: pendingLoading }
-        : { dataSource: deactivatedList, total: deactivatedList.length, loading: deactivatedLoading };
+        : activeTab === "unverified"
+          ? { dataSource: unverifiedList, total: unverifiedList.length, loading: unverifiedLoading }
+          : { dataSource: deactivatedList, total: deactivatedList.length, loading: deactivatedLoading };
 
   return (
     <List>
@@ -149,10 +184,11 @@ export const UserList = () => {
         </Space>
         <Tabs
           activeKey={activeTab}
-          onChange={(k) => setActiveTab(k as "all" | "pending" | "deactivated")}
+          onChange={(k) => setActiveTab(k as "all" | "pending" | "unverified" | "deactivated")}
           items={[
             { key: "all", label: "All users" },
             { key: "pending", label: "Pending approval" },
+            { key: "unverified", label: "Pending email verification" },
             { key: "deactivated", label: "Deactivated accounts" },
           ]}
         />
@@ -189,6 +225,18 @@ export const UserList = () => {
             </Tag>
           )}
         />
+        <Table.Column
+          dataIndex="emailVerified"
+          title="Email"
+          width={90}
+          render={(value: boolean, record: UserRecord) =>
+            record?.emailVerified === false ? (
+              <Tag color="orange">Unverified</Tag>
+            ) : (
+              <Tag color="green">Verified</Tag>
+            )
+          }
+        />
         <Table.Column dataIndex="role" title="Role" width={80} />
         <Table.Column
           dataIndex={["createdAt"]}
@@ -199,7 +247,7 @@ export const UserList = () => {
           title="Actions"
           dataIndex="actions"
           fixed="right"
-          width={260}
+          width={300}
           render={(_, record: UserRecord) => (
             <Space>
               <ShowButton hideText size="small" recordItemId={record.id} />
@@ -243,6 +291,20 @@ export const UserList = () => {
                   }
                 >
                   Activate
+                </Button>
+              )}
+              {record?.emailVerified === false && (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => handleVerifyEmail(record.id as number)}
+                  loading={
+                    verifyEmailMutation.mutation?.isPending &&
+                    verifyEmailMutation.mutation?.variables?.url ===
+                      `${API_URL}/users/${record.id}/verify-email`
+                  }
+                >
+                  Verify email
                 </Button>
               )}
               <DeleteButton hideText size="small" recordItemId={record.id} />

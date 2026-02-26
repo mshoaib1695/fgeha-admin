@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "dayjs": "^1.11.10",
     "@refinedev/cli": "^2.16.48",
     "@refinedev/core": "^5.0.8",
     "@refinedev/kbar": "^2.0.0",

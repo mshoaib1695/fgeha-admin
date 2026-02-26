@@ -9,12 +9,37 @@ import {
   useTable,
 } from "@refinedev/antd";
 import { useInvalidate, useList } from "@refinedev/core";
-import { Table, Tag, Space, Typography, Button, Modal, Form, Select, DatePicker, message, Card } from "antd";
+import { Table, Tag, Space, Typography, Button, Modal, Form, Select, DatePicker, message, Card, Radio } from "antd";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { DownloadOutlined, FilterOutlined } from "@ant-design/icons";
 import type { TableRowSelection } from "antd/es/table/interface";
-import type { BaseRecord } from "@refinedev/core";
-import type { CrudFilter } from "@refinedev/core";
+import type { BaseRecord, CrudFilter } from "@refinedev/core";
 import * as XLSX from "xlsx";
+
+type DatePreset = "today" | "yesterday" | "this_week" | "this_month" | "custom";
+
+function getPresetDateRange(preset: DatePreset): { dateFrom: string; dateTo: string } | null {
+  const today = dayjs();
+  switch (preset) {
+    case "today":
+      return { dateFrom: today.format("YYYY-MM-DD"), dateTo: today.format("YYYY-MM-DD") };
+    case "yesterday": {
+      const y = today.subtract(1, "day");
+      return { dateFrom: y.format("YYYY-MM-DD"), dateTo: y.format("YYYY-MM-DD") };
+    }
+    case "this_week": {
+      const start = today.startOf("week");
+      return { dateFrom: start.format("YYYY-MM-DD"), dateTo: today.format("YYYY-MM-DD") };
+    }
+    case "this_month": {
+      const start = today.startOf("month");
+      return { dateFrom: start.format("YYYY-MM-DD"), dateTo: today.format("YYYY-MM-DD") };
+    }
+    default:
+      return null;
+  }
+}
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
@@ -100,6 +125,9 @@ export const RequestList = () => {
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
   const [selectedServiceOptionId, setSelectedServiceOptionId] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [datePreset, setDatePreset] = useState<DatePreset | "">("");
+  const [customDate, setCustomDate] = useState<Dayjs | null>(null);
+  const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null]>([null, null]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -107,10 +135,28 @@ export const RequestList = () => {
   const [form] = Form.useForm();
   const invalidate = useInvalidate();
 
-  const applyFilters = (optionId: number | null, status: string | null) => {
+  const getDateRange = (): { dateFrom?: string; dateTo?: string } => {
+    if (datePreset && datePreset !== "custom") {
+      return getPresetDateRange(datePreset) ?? {};
+    }
+    if (customDate) {
+      const d = customDate.format("YYYY-MM-DD");
+      return { dateFrom: d, dateTo: d };
+    }
+    const [from, to] = customDateRange;
+    if (from && to) {
+      return { dateFrom: from.format("YYYY-MM-DD"), dateTo: to.format("YYYY-MM-DD") };
+    }
+    return {};
+  };
+
+  const applyFilters = (optionId: number | null, status: string | null, dateRange?: { dateFrom?: string; dateTo?: string }) => {
     const filters: CrudFilter[] = [];
     if (optionId != null) filters.push({ field: "requestTypeOptionId", operator: "eq", value: optionId });
     if (status) filters.push({ field: "status", operator: "eq", value: status });
+    const range = dateRange ?? getDateRange();
+    if (range.dateFrom) filters.push({ field: "dateFrom", operator: "eq", value: range.dateFrom });
+    if (range.dateTo) filters.push({ field: "dateTo", operator: "eq", value: range.dateTo });
     setFilters(filters, "replace");
   };
 
@@ -380,6 +426,66 @@ export const RequestList = () => {
                 applyFilters(selectedServiceOptionId, status);
               }}
             />
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            <Typography.Text type="secondary" style={{ whiteSpace: "nowrap" }}>Date</Typography.Text>
+            <Radio.Group
+              size="small"
+              value={datePreset || undefined}
+              onChange={(e) => {
+                const preset = e.target.value as DatePreset | "";
+                setDatePreset(preset);
+                setCustomDate(null);
+                setCustomDateRange([null, null]);
+                const range = preset ? getPresetDateRange(preset) : null;
+                applyFilters(selectedServiceOptionId, selectedStatus, range ?? {});
+              }}
+            >
+              <Radio.Button value="">All</Radio.Button>
+              <Radio.Button value="today">Today</Radio.Button>
+              <Radio.Button value="yesterday">Yesterday</Radio.Button>
+              <Radio.Button value="this_week">This week</Radio.Button>
+              <Radio.Button value="this_month">This month</Radio.Button>
+              <Radio.Button value="custom">Custom</Radio.Button>
+            </Radio.Group>
+            {datePreset === "custom" && (
+              <Space wrap size="small">
+                <DatePicker
+                  placeholder="Single date"
+                  value={customDate}
+                  onChange={(d) => {
+                    setCustomDate(d);
+                    setCustomDateRange([null, null]);
+                    if (d) {
+                      const str = d.format("YYYY-MM-DD");
+                      applyFilters(selectedServiceOptionId, selectedStatus, { dateFrom: str, dateTo: str });
+                    } else {
+                      applyFilters(selectedServiceOptionId, selectedStatus, {});
+                    }
+                  }}
+                  style={{ width: 140 }}
+                />
+                <Typography.Text type="secondary" style={{ alignSelf: "center" }}>or</Typography.Text>
+                <DatePicker.RangePicker
+                  placeholder={["From", "To"]}
+                  value={customDateRange[0] && customDateRange[1] ? customDateRange : null}
+                  onChange={(range) => {
+                    const [from, to] = range ?? [null, null];
+                    setCustomDateRange([from, to]);
+                    setCustomDate(null);
+                    if (from && to) {
+                      applyFilters(selectedServiceOptionId, selectedStatus, {
+                        dateFrom: from.format("YYYY-MM-DD"),
+                        dateTo: to.format("YYYY-MM-DD"),
+                      });
+                    } else {
+                      applyFilters(selectedServiceOptionId, selectedStatus, {});
+                    }
+                  }}
+                  style={{ width: 220 }}
+                />
+              </Space>
+            )}
           </div>
         </div>
       </Card>

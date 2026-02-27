@@ -36,8 +36,6 @@ type OptionRecord = {
 
 const LIST_KEYS = [
   { value: "daily_bulletin", label: "Water tanker list (daily bulletin)" },
-  { value: "requests", label: "List of requests (this type)" },
-  { value: "news", label: "News" },
 ];
 
 function authHeaders(): HeadersInit {

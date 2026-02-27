@@ -109,10 +109,10 @@ export const DailyBulletinList = () => {
     }
   };
 
-  const handleDelete = (date: string) => {
+  const handleDelete = (r: BulletinRecord) => {
     Modal.confirm({
       title: "Delete bulletin?",
-      content: `Remove the water tanker list for ${date}?`,
+      content: `Remove the water tanker list for ${r.date}?`,
       okText: "Delete",
       okType: "danger",
       cancelText: "Cancel",
@@ -121,7 +121,7 @@ export const DailyBulletinList = () => {
         if (!token) return;
         try {
           const vToken = getVToken();
-          const res = await fetch(`${API_URL}/daily-bulletin/${date}`, {
+          const res = await fetch(`${API_URL}/daily-bulletin/${r.id}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${token}`,
@@ -174,7 +174,7 @@ export const DailyBulletinList = () => {
               title: "Actions",
               width: 100,
               render: (_: unknown, r: BulletinRecord) => (
-                <Button type="link" danger size="small" onClick={() => handleDelete(r.date)}>
+                <Button type="link" danger size="small" onClick={() => handleDelete(r)}>
                   Delete
                 </Button>
               ),

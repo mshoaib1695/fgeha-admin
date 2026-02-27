@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { List } from "@refinedev/antd";
-import { Table, Form, Input, DatePicker, Button, Space, message, Modal } from "antd";
+import { App, Table, Form, Input, DatePicker, Button, Space, message, Modal } from "antd";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
 import { getVToken } from "../../lib/v";
 
@@ -14,6 +14,7 @@ type BulletinRecord = {
 };
 
 export const DailyBulletinList = () => {
+  const { modal } = App.useApp();
   const [bulletins, setBulletins] = useState<BulletinRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [form] = Form.useForm();
@@ -110,7 +111,7 @@ export const DailyBulletinList = () => {
   };
 
   const handleDelete = (r: BulletinRecord) => {
-    Modal.confirm({
+    modal.confirm({
       title: "Delete bulletin?",
       content: `Remove the water tanker list for ${r.date}?`,
       okText: "Delete",
@@ -174,7 +175,15 @@ export const DailyBulletinList = () => {
               title: "Actions",
               width: 100,
               render: (_: unknown, r: BulletinRecord) => (
-                <Button type="link" danger size="small" onClick={() => handleDelete(r)}>
+                <Button
+                  type="link"
+                  danger
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(r);
+                  }}
+                >
                   Delete
                 </Button>
               ),

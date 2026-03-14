@@ -73,6 +73,18 @@ function buildQuery(params: {
   return s ? `?${s}` : "";
 }
 
+/** Format for Excel export: M-D-YYYY HH:mm:ss (24-hour) */
+function formatRequestTime(iso: string): string {
+  const d = new Date(iso);
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const year = d.getFullYear();
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  const s = String(d.getSeconds()).padStart(2, "0");
+  return `${month}-${day}-${year} ${h}:${m}:${s}`;
+}
+
 export const RequestList = () => {
   const [searchParams] = useSearchParams();
   const filterUserId = searchParams.get("userId");
@@ -198,7 +210,7 @@ export const RequestList = () => {
         return {
           "S.No": index + 1,
           "Request Id": r?.requestNumber ?? "",
-          "Request Time": r?.createdAt ? new Date(r.createdAt as string).toLocaleString() : "",
+          "Request Time": r?.createdAt ? formatRequestTime(r.createdAt as string) : "",
           "Service Option": serviceOptionLabelById.get(Number(r?.requestTypeOptionId)) ?? "-",
           Name: r?.user?.fullName ?? "-",
           "Mobile No": mobile || "-",

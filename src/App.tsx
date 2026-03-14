@@ -17,6 +17,7 @@ import { App as AntdApp } from "antd";
 import {
   AppstoreOutlined,
   BarChartOutlined,
+  CommentOutlined,
   DashboardOutlined,
   FileTextOutlined,
   InboxOutlined,
@@ -24,6 +25,7 @@ import {
   TeamOutlined,
   UserOutlined,
   UserSwitchOutlined,
+  ReadOutlined,
 } from "@ant-design/icons";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
@@ -55,6 +57,8 @@ import { DailyBulletinList } from "./pages/daily-bulletin";
 import { ServiceOptionsPage } from "./pages/service-options";
 import { ServiceOptionFormPage } from "./pages/service-options/form";
 import { ReportsPage } from "./pages/reports";
+import { FeedbackList } from "./pages/feedback";
+import { NewsList, NewsFormPage } from "./pages/news";
 import {
   SubSectorList,
   SubSectorCreate,
@@ -176,6 +180,18 @@ function App() {
                     list: "/reports",
                     meta: { label: "Reports", icon: <BarChartOutlined /> },
                   },
+                  {
+                    name: "feedback",
+                    list: "/feedback",
+                    meta: { label: "App feedback", icon: <CommentOutlined /> },
+                  },
+                  {
+                    name: "news",
+                    list: "/news",
+                    create: "/news/create",
+                    edit: "/news/edit/:id",
+                    meta: { label: "News", icon: <ReadOutlined /> },
+                  },
                 ]}
                 options={{
                   syncWithLocation: true,
@@ -205,6 +221,12 @@ function App() {
                   >
                     <Route index element={<DashboardPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/feedback" element={<FeedbackList />} />
+                    <Route path="/news">
+                      <Route index element={<NewsList />} />
+                      <Route path="create" element={<NewsFormPage />} />
+                      <Route path="edit/:id" element={<NewsFormPage />} />
+                    </Route>
                     <Route path="/request-types">
                       <Route index element={<RequestTypeList />} />
                       <Route path="create" element={<RequestTypeCreate />} />

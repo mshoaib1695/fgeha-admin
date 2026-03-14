@@ -37,7 +37,7 @@ export const FeedbackList = () => {
       const res = await fetch(`${API_URL}/app-settings`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        form.setFieldValue("ratingEnabled", data?.ratingEnabled !== false);
+        form.setFieldValue("ratingEnabled", data?.ratingEnabled === true);
       }
     } catch {
       // ignore
@@ -48,16 +48,18 @@ export const FeedbackList = () => {
     loadSettings();
   }, [loadSettings]);
 
-  const handleSaveRating = async () => {
+  const handleSaveRating = async (values?: { ratingEnabled?: boolean }) => {
     setSavingRating(true);
     try {
-      const enabled = form.getFieldValue("ratingEnabled") !== false;
+      const enabled = (values ?? form.getFieldsValue()).ratingEnabled === true;
       const res = await fetch(`${API_URL}/app-settings`, {
         method: "PATCH",
         headers: authHeaders(),
         body: JSON.stringify({ ratingEnabled: enabled }),
       });
       if (!res.ok) throw new Error("Failed to save");
+      const data = await res.json();
+      form.setFieldValue("ratingEnabled", data?.ratingEnabled === true);
       message.success("Rating setting saved.");
     } catch {
       message.error("Failed to save rating setting.");
@@ -119,7 +121,7 @@ export const FeedbackList = () => {
         }
         style={{ marginBottom: 24 }}
       >
-        <Form form={form} layout="vertical" onFinish={handleSaveRating}>
+        <Form form={form} layout="vertical" onFinish={(values) => handleSaveRating(values)}>
           <Form.Item
             name="ratingEnabled"
             label="Show rating to users"

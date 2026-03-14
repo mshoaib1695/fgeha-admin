@@ -26,7 +26,7 @@ type NewsRecord = {
   content: string | null;
   imageUrl: string | null;
   displayOrder: number;
-  openDetail?: boolean;
+  openDetail?: boolean | number;
 };
 
 function authHeaders(): HeadersInit {

@@ -63,7 +63,12 @@ export const UserEdit = () => {
     id: id ? parseInt(id, 10) : undefined,
   });
   const record = query?.data?.data as
-    | { id?: number; emailVerified?: boolean; idCardFront?: string; idCardBack?: string }
+    | {
+        id?: number;
+        emailVerified?: boolean;
+        idCardFront?: string;
+        idCardBack?: string;
+      }
     | undefined;
   const frontUrl = idCardImageUrl(record?.idCardFront);
   const backUrl = idCardImageUrl(record?.idCardBack);
@@ -79,6 +84,7 @@ export const UserEdit = () => {
   });
   const subSectors = Array.isArray(subSectorsResult?.data) ? subSectorsResult.data : [];
   const subSectorOptions = subSectors.map((s) => ({ value: s.id, label: `${s.name} (${s.code})` }));
+
 
   const handleGeneratePassword = () => {
     passwordForm.setFieldValue("password", generateStrongPassword());

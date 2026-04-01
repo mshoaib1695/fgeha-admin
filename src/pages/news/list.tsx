@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { List } from "@refinedev/antd";
-import { Table, Button, Space, message, App, Card, Form, Input, Switch } from "antd";
+import { Table, Button, Space, message, App, Card, Form, Input, Switch, Select, InputNumber } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from "@ant-design/icons";
 import { Link } from "react-router";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
@@ -61,6 +61,8 @@ export const NewsList = () => {
         form.setFieldValue("newsDetailHeader", data?.newsDetailHeader ?? "");
         form.setFieldValue("showNewsSectionHeading", data?.showNewsSectionHeading !== false);
         form.setFieldValue("showNewsCarouselOverlay", data?.showNewsCarouselOverlay !== false);
+        form.setFieldValue("paymentBlockingMode", data?.paymentBlockingMode ?? "blockAfterGracePeriod");
+        form.setFieldValue("paymentGraceDaysDefault", Number(data?.paymentGraceDaysDefault ?? 30));
       }
     } catch {
       // ignore
@@ -82,6 +84,11 @@ export const NewsList = () => {
       const detailHeader = form.getFieldValue("newsDetailHeader")?.trim() ?? "";
       const showHeading = form.getFieldValue("showNewsSectionHeading") !== false;
       const showOverlay = form.getFieldValue("showNewsCarouselOverlay") !== false;
+      const paymentBlockingMode =
+        form.getFieldValue("paymentBlockingMode") === "blockOnAnyDue"
+          ? "blockOnAnyDue"
+          : "blockAfterGracePeriod";
+      const paymentGraceDaysDefault = Number(form.getFieldValue("paymentGraceDaysDefault") ?? 30);
       const res = await fetch(`${API_URL}/app-settings`, {
         method: "PATCH",
         headers: authHeaders(),
@@ -90,6 +97,8 @@ export const NewsList = () => {
           newsDetailHeader: detailHeader,
           showNewsSectionHeading: showHeading,
           showNewsCarouselOverlay: showOverlay,
+          paymentBlockingMode,
+          paymentGraceDaysDefault,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -181,6 +190,31 @@ export const NewsList = () => {
               Save
             </Button>
           </Form.Item>
+          <Card
+            size="small"
+            title="Outstanding payments settings"
+            style={{ marginTop: 8, marginBottom: 12 }}
+          >
+            <Form.Item
+              name="paymentBlockingMode"
+              label="Service blocking mode"
+              initialValue="blockAfterGracePeriod"
+            >
+              <Select
+                options={[
+                  { value: "blockAfterGracePeriod", label: "Block after grace period" },
+                  { value: "blockOnAnyDue", label: "Block immediately when dues exist" },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item
+              name="paymentGraceDaysDefault"
+              label="Default grace days"
+              initialValue={30}
+            >
+              <InputNumber min={0} max={365} style={{ width: 160 }} />
+            </Form.Item>
+          </Card>
         </Form>
       </Card>
 

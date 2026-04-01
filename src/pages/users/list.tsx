@@ -26,6 +26,13 @@ type UserRecord = BaseRecord & {
   createdAt: string;
 };
 
+type HouseDueRecord = {
+  subSectorId: number;
+  houseNo: string;
+  streetNo: string;
+  totalOutstanding: number;
+};
+
 export const UserList = () => {
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "unverified" | "deactivated">("all");
   const [searchText, setSearchText] = useState("");
@@ -79,6 +86,20 @@ export const UserList = () => {
   const rejectMutation = useCustomMutation();
   const activateMutation = useCustomMutation();
   const verifyEmailMutation = useCustomMutation();
+  const { result: duesResult } = useCustom<HouseDueRecord[]>({
+    url: `${API_URL}/house-dues/admin/list`,
+    method: "get",
+  });
+  const duesRows = Array.isArray(duesResult)
+    ? duesResult
+    : Array.isArray((duesResult as unknown as { data?: HouseDueRecord[] })?.data)
+      ? ((duesResult as unknown as { data?: HouseDueRecord[] }).data ?? [])
+      : [];
+  const duesMap = new Map<string, HouseDueRecord>();
+  duesRows.forEach((d) => {
+    const key = `${d.subSectorId}::${String(d.houseNo).trim()}::${String(d.streetNo).trim()}`;
+    duesMap.set(key, d);
+  });
 
   const handleApprove = (id: number) => {
     approveMutation.mutate(
@@ -204,6 +225,17 @@ export const UserList = () => {
           title="Sub-sector"
           width={110}
           render={(_, record: UserRecord) => record?.subSector?.name ?? record?.subSectorId ?? "-"}
+        />
+        <Table.Column
+          title="Outstanding"
+          width={130}
+          render={(_, record: UserRecord) => {
+            const key = `${record?.subSectorId ?? ""}::${String(record?.houseNo ?? "").trim()}::${String(record?.streetNo ?? "").trim()}`;
+            const due = duesMap.get(key);
+            const total = Number(due?.totalOutstanding ?? 0);
+            if (total <= 0) return <Tag color="green">Clear</Tag>;
+            return <Tag color="red">{total.toFixed(2)}</Tag>;
+          }}
         />
         <Table.Column
           dataIndex="approvalStatus"

@@ -1,7 +1,10 @@
 import { Show, TextField, DateField } from "@refinedev/antd";
 import { useShow } from "@refinedev/core";
 import { Typography, Card, Image, Space } from "antd";
+import { useEffect, useState } from "react";
 import { API_URL } from "../../providers/constants";
+import { TOKEN_KEY } from "../../providers/constants";
+import { getVToken } from "../../lib/v";
 
 const { Title } = Typography;
 
@@ -14,9 +17,37 @@ function idCardImageUrl(path: string | null | undefined): string | null {
 export const UserShow = () => {
   const { query } = useShow();
   const record = query?.data?.data;
+  const [outstanding, setOutstanding] = useState<number>(0);
+  const [dueMessage, setDueMessage] = useState<string>("-");
   const frontUrl = idCardImageUrl(record?.idCardFront);
   const backUrl = idCardImageUrl(record?.idCardBack);
   const hasAnyIdCard = frontUrl || backUrl;
+
+  useEffect(() => {
+    const load = async () => {
+      if (!record?.subSectorId || !record?.houseNo || !record?.streetNo) return;
+      const token = localStorage.getItem(TOKEN_KEY);
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const v = getVToken();
+      if (v) headers["X-V"] = v;
+      const params = new URLSearchParams({
+        subSectorId: String(record.subSectorId),
+        houseNo: String(record.houseNo),
+        streetNo: String(record.streetNo),
+      });
+      try {
+        const res = await fetch(`${API_URL}/house-dues/admin/by-house?${params.toString()}`, { headers });
+        if (!res.ok) return;
+        const data = await res.json();
+        setOutstanding(Number(data?.totalOutstanding ?? 0));
+        setDueMessage(String(data?.message ?? data?.noticeMessage ?? "-"));
+      } catch {
+        setOutstanding(0);
+      }
+    };
+    void load();
+  }, [record?.subSectorId, record?.houseNo, record?.streetNo]);
 
   return (
     <Show isLoading={query?.isLoading}>
@@ -40,6 +71,10 @@ export const UserShow = () => {
       <TextField value={record?.approvalStatus} />
       <Title level={5}>Account status</Title>
       <TextField value={record?.accountStatus ?? "active"} />
+      <Title level={5}>Outstanding payment</Title>
+      <TextField value={outstanding > 0 ? outstanding.toFixed(2) : "Clear"} />
+      <Title level={5}>Outstanding message</Title>
+      <TextField value={dueMessage} />
       {hasAnyIdCard && (
         <>
           <Title level={5} style={{ marginTop: 24 }}>ID card photos</Title>

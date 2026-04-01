@@ -26,6 +26,7 @@ import {
   UserOutlined,
   UserSwitchOutlined,
   ReadOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import { Header } from "./components/header";
@@ -59,6 +60,7 @@ import { ServiceOptionFormPage } from "./pages/service-options/form";
 import { ReportsPage } from "./pages/reports";
 import { FeedbackList } from "./pages/feedback";
 import { NewsList, NewsFormPage } from "./pages/news";
+import { OutstandingPaymentsList } from "./pages/outstanding-payments";
 import {
   SubSectorList,
   SubSectorCreate,
@@ -186,6 +188,11 @@ function App() {
                     meta: { label: "App feedback", icon: <CommentOutlined /> },
                   },
                   {
+                    name: "outstanding-payments",
+                    list: "/outstanding-payments",
+                    meta: { label: "Outstanding payments", icon: <DollarOutlined /> },
+                  },
+                  {
                     name: "news",
                     list: "/news",
                     create: "/news/create",
@@ -227,6 +234,7 @@ function App() {
                       <Route path="create" element={<NewsFormPage />} />
                       <Route path="edit/:id" element={<NewsFormPage />} />
                     </Route>
+                    <Route path="/outstanding-payments" element={<OutstandingPaymentsList />} />
                     <Route path="/request-types">
                       <Route index element={<RequestTypeList />} />
                       <Route path="create" element={<RequestTypeCreate />} />

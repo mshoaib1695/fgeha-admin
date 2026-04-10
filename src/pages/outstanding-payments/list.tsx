@@ -97,6 +97,10 @@ function defaultNoticeMessage(graceDays: number): string {
   return `Please clear your outstanding payment within ${days} days to continue receiving services.`;
 }
 
+function formatOutstandingDisplay(value: number): string {
+  return String(Math.round(Number(value ?? 0)));
+}
+
 export const OutstandingPaymentsList = () => {
   const [rows, setRows] = useState<HouseDueRow[]>([]);
   const [subSectors, setSubSectors] = useState<SubSector[]>([]);
@@ -223,7 +227,7 @@ export const OutstandingPaymentsList = () => {
         String(r.houseNo ?? "").toLowerCase().includes(q) ||
         String(r.streetNo ?? "").toLowerCase().includes(q) ||
         subSectorLabel.includes(q) ||
-        String(outstanding.toFixed(2)).includes(q)
+        formatOutstandingDisplay(outstanding).includes(q)
       );
     });
     const sorted = [...data];
@@ -348,7 +352,7 @@ export const OutstandingPaymentsList = () => {
         throw new Error("No outstanding balance found for this house.");
       }
       if (payAmount > outstanding) {
-        throw new Error(`Amount received cannot exceed outstanding balance (${outstanding.toFixed(2)}).`);
+        throw new Error(`Amount received cannot exceed outstanding balance (${formatOutstandingDisplay(outstanding)}).`);
       }
 
       await submitEntry({
@@ -745,7 +749,7 @@ export const OutstandingPaymentsList = () => {
           width={150}
           render={(_, r) => (
             <Tag color={Number(r.totalOutstanding || 0) > 0 ? "red" : "green"}>
-              {Number(r.totalOutstanding || 0).toFixed(2)}
+              {formatOutstandingDisplay(Number(r.totalOutstanding || 0))}
             </Tag>
           )}
         />
@@ -852,7 +856,7 @@ export const OutstandingPaymentsList = () => {
         <Form form={paymentForm} layout="vertical" requiredMark={false}>
           {paymentOutstanding != null ? (
             <Tag color={paymentOutstanding > 0 ? "red" : "green"} style={{ marginBottom: 8 }}>
-              Outstanding Balance: {Number(paymentOutstanding).toFixed(2)}
+              Outstanding Balance: {formatOutstandingDisplay(Number(paymentOutstanding))}
             </Tag>
           ) : null}
           <Row gutter={12}>
@@ -899,7 +903,7 @@ export const OutstandingPaymentsList = () => {
                         throw new Error("No outstanding balance found for this house.");
                       }
                       if (amount > outstanding) {
-                        throw new Error(`Amount cannot exceed outstanding balance (${outstanding.toFixed(2)}).`);
+                        throw new Error(`Amount cannot exceed outstanding balance (${formatOutstandingDisplay(outstanding)}).`);
                       }
                     },
                   },
@@ -1124,7 +1128,7 @@ export const OutstandingPaymentsList = () => {
       >
         <Space style={{ marginBottom: 12 }}>
           <Tag color={selectedAccount && selectedAccount.totalOutstanding > 0 ? "red" : "green"}>
-            Current Outstanding: {selectedAccount ? Number(selectedAccount.totalOutstanding || 0).toFixed(2) : "0.00"}
+            Current Outstanding: {selectedAccount ? formatOutstandingDisplay(Number(selectedAccount.totalOutstanding || 0)) : "0"}
           </Tag>
           <Select
             value={historyFilter}
@@ -1166,7 +1170,7 @@ export const OutstandingPaymentsList = () => {
           />
           <Table.Column dataIndex="category" title="Category" />
           <Table.Column title="Amount" render={(_, r) => Number(r.amount || 0).toFixed(2)} />
-          <Table.Column title="Balance" render={(_, r) => Number(r.runningOutstanding || 0).toFixed(2)} />
+          <Table.Column title="Balance" render={(_, r) => formatOutstandingDisplay(Number(r.runningOutstanding || 0))} />
         </Table>
       </Modal>
     </List>

@@ -234,7 +234,7 @@ export const UserList = () => {
             const due = duesMap.get(key);
             const total = Number(due?.totalOutstanding ?? 0);
             if (total <= 0) return <Tag color="green">Clear</Tag>;
-            return <Tag color="red">{total.toFixed(2)}</Tag>;
+            return <Tag color="red">{Math.round(total)}</Tag>;
           }}
         />
         <Table.Column

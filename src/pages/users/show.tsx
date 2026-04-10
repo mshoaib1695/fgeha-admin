@@ -72,7 +72,7 @@ export const UserShow = () => {
       <Title level={5}>Account status</Title>
       <TextField value={record?.accountStatus ?? "active"} />
       <Title level={5}>Outstanding payment</Title>
-      <TextField value={outstanding > 0 ? outstanding.toFixed(2) : "Clear"} />
+      <TextField value={outstanding > 0 ? String(Math.round(outstanding)) : "Clear"} />
       <Title level={5}>Outstanding message</Title>
       <TextField value={dueMessage} />
       {hasAnyIdCard && (

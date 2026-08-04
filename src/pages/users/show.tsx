@@ -4,7 +4,6 @@ import { Typography, Card, Image, Space } from "antd";
 import { useEffect, useState } from "react";
 import { API_URL } from "../../providers/constants";
 import { TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 const { Title } = Typography;
 
@@ -29,8 +28,6 @@ export const UserShow = () => {
       const token = localStorage.getItem(TOKEN_KEY);
       const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      const v = getVToken();
-      if (v) headers["X-V"] = v;
       const params = new URLSearchParams({
         subSectorId: String(record.subSectorId),
         houseNo: String(record.houseNo),

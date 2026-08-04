@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { List } from "@refinedev/antd";
 import { App, Table, Form, Input, DatePicker, Button, Space, message, Modal } from "antd";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 type BulletinRecord = {
   id: number;
@@ -31,12 +30,10 @@ export const DailyBulletinList = () => {
     }
     setLoading(true);
     try {
-      const vToken = getVToken();
       const res = await fetch(`${API_URL}/daily-bulletin`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          ...(vToken ? { "X-V": vToken } : {}),
         },
       });
       if (!res.ok) {
@@ -85,12 +82,10 @@ export const DailyBulletinList = () => {
       formData.append("date", date);
       formData.append("title", values.title.trim());
       if (values.description?.trim()) formData.append("description", values.description.trim());
-      const vToken = getVToken();
       const res = await fetch(`${API_URL}/daily-bulletin`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          ...(vToken ? { "X-V": vToken } : {}),
         },
         body: formData,
       });
@@ -121,12 +116,10 @@ export const DailyBulletinList = () => {
         const token = localStorage.getItem(TOKEN_KEY);
         if (!token) return;
         try {
-          const vToken = getVToken();
           const res = await fetch(`${API_URL}/daily-bulletin/${r.id}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${token}`,
-              ...(vToken ? { "X-V": vToken } : {}),
             },
           });
           if (!res.ok) throw new Error("Delete failed");

@@ -3,14 +3,11 @@ import { List } from "@refinedev/antd";
 import { Table, Tag, Card, Form, Switch, Button, message } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 function authHeaders(): HeadersInit {
   const token = localStorage.getItem(TOKEN_KEY);
   const h: HeadersInit = { "Content-Type": "application/json" };
   if (token) (h as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  const v = getVToken();
-  if (v) (h as Record<string, string>)["X-V"] = v;
   return h;
 }
 
@@ -77,12 +74,10 @@ export const FeedbackList = () => {
     }
     setLoading(true);
     try {
-      const vToken = getVToken();
       const res = await fetch(`${API_URL}/feedback`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
-          ...(vToken ? { "X-V": vToken } : {}),
         },
       });
       if (!res.ok) {

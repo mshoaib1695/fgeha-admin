@@ -7,7 +7,6 @@ import {
   TOKEN_KEY,
   USER_KEY,
 } from "./constants";
-import { getVToken } from "../lib/v";
 
 export interface AuthUser {
   id: number;
@@ -27,8 +26,6 @@ const clearSessionTracking = () => {
 export const authProvider: AuthProvider = {
   login: async ({ email, password }) => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    const v = getVToken();
-    if (v) headers["X-V"] = v;
     const res = await fetch(`${API_URL}/auth/admin-login`, {
       method: "POST",
       headers,
@@ -66,8 +63,6 @@ export const authProvider: AuthProvider = {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return { authenticated: false, redirectTo: "/login", logout: true };
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-    const v = getVToken();
-    if (v) headers["X-V"] = v;
     const res = await fetch(`${API_URL}/auth/me`, { headers });
     if (!res.ok) {
       localStorage.removeItem(TOKEN_KEY);
@@ -86,8 +81,6 @@ export const authProvider: AuthProvider = {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) return null;
       const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-      const v = getVToken();
-      if (v) headers["X-V"] = v;
       const res = await fetch(`${API_URL}/auth/me`, { headers });
       if (!res.ok) return null;
       const user = (await res.json()) as AuthUser;

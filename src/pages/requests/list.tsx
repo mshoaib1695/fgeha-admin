@@ -31,7 +31,6 @@ function getDatePresets(): { label: string; value: [Dayjs, Dayjs] }[] {
 }
 
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "orange",
@@ -183,7 +182,6 @@ export const RequestList = () => {
     setExporting(true);
     try {
       const token = localStorage.getItem(TOKEN_KEY);
-      const vToken = getVToken();
       const query = buildQuery({
         requestTypeId: requestTypeId ?? undefined,
         requestTypeOptionId: requestTypeOptionId ?? undefined,
@@ -194,7 +192,6 @@ export const RequestList = () => {
       const res = await fetch(`${API_URL}/requests${query}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(vToken ? { "X-V": vToken } : {}),
         },
       });
       if (!res.ok) throw new Error("Failed to fetch requests");
@@ -238,13 +235,11 @@ export const RequestList = () => {
     setUpdatingStatusId(requestId);
     try {
       const token = localStorage.getItem(TOKEN_KEY);
-      const vToken = getVToken();
       const res = await fetch(`${API_URL}/requests/${requestId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(vToken ? { "X-V": vToken } : {}),
         },
         body: JSON.stringify({ status }),
       });
@@ -274,11 +269,9 @@ export const RequestList = () => {
       return;
     }
     const token = localStorage.getItem(TOKEN_KEY);
-    const vToken = getVToken();
     const headers: HeadersInit = {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(vToken ? { "X-V": vToken } : {}),
     };
     setBulkUpdating(true);
     let ok = 0;

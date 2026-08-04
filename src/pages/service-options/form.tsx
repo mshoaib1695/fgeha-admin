@@ -33,7 +33,6 @@ import {
 } from "@ant-design/icons";
 import type { UploadProps } from "antd";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 import { AllowedDaysField } from "../request-types/AllowedDaysField";
 
 type OptionType = "form" | "list" | "rules" | "notification" | "link" | "phone";
@@ -89,8 +88,6 @@ function authHeaders(): HeadersInit {
   const token = localStorage.getItem(TOKEN_KEY);
   const h: HeadersInit = { "Content-Type": "application/json" };
   if (token) (h as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  const v = getVToken();
-  if (v) (h as Record<string, string>)["X-V"] = v;
   return h;
 }
 
@@ -213,10 +210,8 @@ export const ServiceOptionFormPage = () => {
     showUploadList: false,
     customRequest: async ({ file, onSuccess, onError }) => {
       const token = localStorage.getItem(TOKEN_KEY);
-      const vToken = getVToken();
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      if (vToken) headers["X-V"] = vToken;
       const formData = new FormData();
       formData.append("file", file as File);
       try {

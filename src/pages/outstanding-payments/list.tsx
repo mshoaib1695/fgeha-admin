@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { List } from "@refinedev/antd";
 import { Button, Card, Col, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tag, message } from "antd";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 import * as XLSX from "xlsx";
 
 type HouseDueRow = {
@@ -145,8 +144,6 @@ export const OutstandingPaymentsList = () => {
     const token = localStorage.getItem(TOKEN_KEY);
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
-    const v = getVToken();
-    if (v) headers["X-V"] = v;
     return headers;
   };
 
@@ -612,8 +609,6 @@ export const OutstandingPaymentsList = () => {
       fd.append("stopOnError", String(bulkStopOnError));
       const headers: HeadersInit = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      const v = getVToken();
-      if (v) (headers as Record<string, string>)["X-V"] = v;
       const res = await fetch(`${API_URL}/house-dues/admin/entries/bulk-upload`, {
         method: "POST",
         headers,

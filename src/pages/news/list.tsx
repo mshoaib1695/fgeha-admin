@@ -4,7 +4,6 @@ import { Table, Button, Space, message, App, Card, Form, Input, Switch, Select, 
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from "@ant-design/icons";
 import { Link } from "react-router";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 type NewsRecord = {
   id: number;
@@ -20,8 +19,6 @@ function authHeaders(): HeadersInit {
   const token = localStorage.getItem(TOKEN_KEY);
   const h: HeadersInit = { "Content-Type": "application/json" };
   if (token) (h as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  const v = getVToken();
-  if (v) (h as Record<string, string>)["X-V"] = v;
   return h;
 }
 

@@ -3,7 +3,6 @@ import { Edit, useForm } from "@refinedev/antd";
 import { Form, Input, InputNumber, Checkbox, Upload, message, Card } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 export const RequestTypeEdit = () => {
   const [underConstructionEnabled, setUnderConstructionEnabled] = useState(false);
@@ -23,8 +22,6 @@ export const RequestTypeEdit = () => {
       const formData = new FormData();
       formData.append("file", file);
       const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-      const v = getVToken();
-      if (v) headers["X-V"] = v;
       const res = await fetch(`${API_URL}/request-types/upload-icon`, {
         method: "POST",
         headers,

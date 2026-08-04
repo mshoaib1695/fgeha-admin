@@ -33,7 +33,6 @@ import { Header } from "./components/header";
 import { CustomSider } from "./components/sider/CustomSider";
 import { IdleSessionLogout } from "./components/IdleSessionLogout";
 import { ColorModeContextProvider } from "./contexts/color-mode";
-import { VGate } from "./lib/VGate";
 import { LoginPage } from "./pages/login";
 import {
   UserList,
@@ -120,7 +119,6 @@ function App() {
       <RefineKbarProvider>
         <ColorModeContextProvider>
           <AntdApp>
-            <VGate>
             <Refine
                 dataProvider={dataProvider}
                 authProvider={authProvider}
@@ -270,7 +268,6 @@ function App() {
                 <UnsavedChangesNotifier />
                 <DocumentTitleHandler />
               </Refine>
-            </VGate>
           </AntdApp>
         </ColorModeContextProvider>
       </RefineKbarProvider>

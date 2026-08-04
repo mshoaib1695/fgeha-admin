@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { Card, Select, Table, Button, Space, message } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 type RequestType = { id: number; name: string; slug: string };
 type OptionType = "form" | "list" | "rules" | "notification" | "link" | "phone";
@@ -42,8 +41,6 @@ function authHeaders(): HeadersInit {
   const token = localStorage.getItem(TOKEN_KEY);
   const h: HeadersInit = { "Content-Type": "application/json" };
   if (token) (h as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  const v = getVToken();
-  if (v) (h as Record<string, string>)["X-V"] = v;
   return h;
 }
 

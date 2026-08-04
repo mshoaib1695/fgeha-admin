@@ -18,7 +18,6 @@ import { ArrowLeftOutlined, PictureOutlined } from "@ant-design/icons";
 import type { UploadProps } from "antd";
 import MDEditor from "@uiw/react-md-editor";
 import { API_URL, TOKEN_KEY } from "../../providers/constants";
-import { getVToken } from "../../lib/v";
 
 type NewsRecord = {
   id: number;
@@ -33,8 +32,6 @@ function authHeaders(): HeadersInit {
   const token = localStorage.getItem(TOKEN_KEY);
   const h: HeadersInit = { "Content-Type": "application/json" };
   if (token) (h as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  const v = getVToken();
-  if (v) (h as Record<string, string>)["X-V"] = v;
   return h;
 }
 
@@ -87,10 +84,8 @@ export const NewsFormPage = () => {
     showUploadList: false,
     customRequest: async ({ file, onSuccess, onError }) => {
       const tokenVal = localStorage.getItem(TOKEN_KEY);
-      const vToken = getVToken();
       const headers: Record<string, string> = {};
       if (tokenVal) headers["Authorization"] = `Bearer ${tokenVal}`;
-      if (vToken) headers["X-V"] = vToken;
       const formData = new FormData();
       formData.append("file", file as File);
       try {

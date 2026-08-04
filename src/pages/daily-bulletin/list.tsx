@@ -93,7 +93,7 @@ export const DailyBulletinList = () => {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.message ?? "Upload failed");
       }
-      message.success("Water tanker list saved for " + date);
+      message.success("Water tanker list added for " + date);
       form.resetFields();
       setFileList(null);
       setModalOpen(false);
@@ -107,8 +107,8 @@ export const DailyBulletinList = () => {
 
   const handleDelete = (r: BulletinRecord) => {
     modal.confirm({
-      title: "Delete bulletin?",
-      content: `Remove the water tanker list for ${r.date}?`,
+      title: "Delete this list?",
+      content: `Remove "${r.title}" for ${r.date}?`,
       okText: "Delete",
       okType: "danger",
       cancelText: "Cancel",
@@ -139,7 +139,7 @@ export const DailyBulletinList = () => {
       <List
         title="Water tanker list (daily)"
         createButtonProps={{
-          children: "Set list for a date",
+          children: "Add list for a date",
           onClick: () => setModalOpen(true),
         }}
       >
@@ -186,7 +186,7 @@ export const DailyBulletinList = () => {
       </List>
 
       <Modal
-        title="Set water tanker list for a date"
+        title="Add water tanker list"
         open={modalOpen}
         onCancel={() => {
           setModalOpen(false);
@@ -201,6 +201,7 @@ export const DailyBulletinList = () => {
             name="date"
             label="Date"
             rules={[{ required: true, message: "Select date" }]}
+            extra="You can add more than one list for the same date."
           >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>
@@ -231,7 +232,7 @@ export const DailyBulletinList = () => {
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit" loading={uploading}>
-                Save
+                Add list
               </Button>
               <Button
                 onClick={() => {
